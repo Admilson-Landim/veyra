@@ -8,9 +8,31 @@ import androidx.media3.common.MediaMetadata
 import io.github.admilsonlandim.veyra.data.clips.TrackClip
 import io.github.admilsonlandim.veyra.data.clips.clipToApply
 import io.github.admilsonlandim.veyra.data.media.Track
+import io.github.admilsonlandim.veyra.data.media.TrackKey
 
 /** MediaMetadata extra holding the track's content:// URI. */
 const val EXTRA_CONTENT_URI = "io.github.admilsonlandim.veyra.CONTENT_URI"
+
+// MediaMetadata extras carrying the track's TrackKey, so the playback service can save the queue
+// in a form that survives a MediaStore re-index (see SavedQueue).
+private const val EXTRA_KEY_PATH = "io.github.admilsonlandim.veyra.KEY_PATH"
+private const val EXTRA_KEY_NAME = "io.github.admilsonlandim.veyra.KEY_NAME"
+private const val EXTRA_KEY_SIZE = "io.github.admilsonlandim.veyra.KEY_SIZE"
+private const val EXTRA_KEY_DURATION = "io.github.admilsonlandim.veyra.KEY_DURATION"
+
+/** The TrackKey stored by [toMediaItem], or null for items not created by it. */
+fun MediaItem.trackKey(): TrackKey? {
+    val extras = mediaMetadata.extras ?: return null
+    val id = mediaId.toLongOrNull() ?: return null
+    if (!extras.containsKey(EXTRA_KEY_SIZE)) return null
+    return TrackKey(
+        mediaStoreId = id,
+        relativePath = extras.getString(EXTRA_KEY_PATH),
+        displayName = extras.getString(EXTRA_KEY_NAME),
+        sizeBytes = extras.getLong(EXTRA_KEY_SIZE),
+        durationMs = extras.getLong(EXTRA_KEY_DURATION),
+    )
+}
 
 /**
  * The single place where a Track becomes a MediaItem.
@@ -36,7 +58,15 @@ fun Track.toMediaItem(clip: TrackClip? = null): MediaItem =
                 .setIsPlayable(true)
                 .setIsBrowsable(false)
                 // Lets the notification's bitmap loader find a cover stored as a separate image.
-                .setExtras(Bundle().apply { putString(EXTRA_CONTENT_URI, contentUri) })
+                .setExtras(
+                    Bundle().apply {
+                        putString(EXTRA_CONTENT_URI, contentUri)
+                        putString(EXTRA_KEY_PATH, relativePath)
+                        putString(EXTRA_KEY_NAME, displayName)
+                        putLong(EXTRA_KEY_SIZE, sizeBytes)
+                        putLong(EXTRA_KEY_DURATION, durationMs)
+                    },
+                )
                 .build(),
         )
         .apply {

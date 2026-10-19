@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -19,6 +20,7 @@ import io.github.admilsonlandim.veyra.data.media.TrackSort
 import io.github.admilsonlandim.veyra.playback.RepeatMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 /** Library display and filtering preferences. */
@@ -153,6 +155,16 @@ class AppPreferences private constructor(private val store: DataStore<Preference
 
     suspend fun setAppearance(mode: AppearanceMode) = store.edit { it[KEY_APPEARANCE] = mode.name }
 
+    /** Current item and position in the file of the last queue (the items are in Room). */
+    suspend fun queuePosition(): Pair<Int, Long> = store.data.map { prefs ->
+        (prefs[KEY_QUEUE_INDEX] ?: 0) to (prefs[KEY_QUEUE_POSITION] ?: 0L)
+    }.first()
+
+    suspend fun setQueuePosition(index: Int, positionMs: Long) = store.edit {
+        it[KEY_QUEUE_INDEX] = index
+        it[KEY_QUEUE_POSITION] = positionMs
+    }
+
     suspend fun setSort(sort: TrackSort) = store.edit { it[KEY_SORT] = sort.name }
 
     suspend fun setExcludedFolders(folders: Set<String>) = store.edit { it[KEY_EXCLUDED_FOLDERS] = folders }
@@ -171,6 +183,8 @@ class AppPreferences private constructor(private val store: DataStore<Preference
     companion object {
         private val KEY_SORT = stringPreferencesKey("library_sort")
         private val KEY_APPEARANCE = stringPreferencesKey("appearance")
+        private val KEY_QUEUE_INDEX = intPreferencesKey("queue_index")
+        private val KEY_QUEUE_POSITION = longPreferencesKey("queue_position_ms")
         private val KEY_EXCLUDED_FOLDERS = stringSetPreferencesKey("library_excluded_folders")
         private val KEY_SKIP_SHORT = booleanPreferencesKey("library_skip_short")
         private val KEY_MIN_DURATION = intPreferencesKey("library_min_duration_s")

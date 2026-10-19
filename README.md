@@ -56,7 +56,7 @@ audio files themselves are never modified.
 | Area | What you get |
 |---|---|
 | **Library** | All music from MediaStore; play all / shuffle; sort by title, artist, album, recently added or length (accent- and case-insensitive); recordings, voice notes, ringtones, alarms and podcasts excluded; editable excluded folders; optional "hide short tracks". |
-| **Player** | Mini-player and full-screen player; play/pause, previous/next, seek, repeat (off / all / one), shuffle; swipe the cover or mini-player to change track; two-pane layout in landscape. |
+| **Player** | Mini-player and full-screen player; play/pause, previous/next, seek, repeat (off / all / one), shuffle; the last queue, track and position are restored (paused) when the app is reopened; swipe the cover or mini-player to change track; two-pane layout in landscape. |
 | **Background** | `MediaSessionService` with notification and lock-screen controls; shuffle and repeat buttons in the notification; headset and Bluetooth media buttons; audio focus (calls, other apps); wake lock while playing. |
 | **Covers** | Embedded artwork; same-name image, folder cover (`cover`, `folder`, `front`…) or VidMate thumbnail; default Veyra cover otherwise. Also shown in the notification. |
 | **Playlists** | Create, rename (no duplicates), delete with confirmation, reorder, remove, play all or from a track. Tracks that disappear are marked *unavailable* and skipped. |
@@ -207,7 +207,6 @@ app/src/main/java/io/github/admilsonlandim/veyra/
 
 Planned for version 1.1 (not implemented yet):
 
-- Restore the queue and position after the app is closed.
 - Search in the library and a folder view.
 - Delete a track from the device (with confirmation).
 - Handle badly encoded ID3 tags.

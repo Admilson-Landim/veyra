@@ -4,6 +4,7 @@ import android.content.ComponentName
 import android.content.Context
 import androidx.core.content.ContextCompat
 import androidx.media3.common.C
+import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
@@ -112,6 +113,17 @@ class PlayerConnection(context: Context) {
         if (shuffle != null) c.shuffleModeEnabled = shuffle
         c.prepare()
         c.play()
+    }
+
+    /**
+     * Loads a queue paused at [startIndex], [positionMs] into that item (relative to its clip).
+     * Used to resume the last queue; does nothing if something is already queued.
+     */
+    fun loadQueue(items: List<MediaItem>, startIndex: Int, positionMs: Long) {
+        val c = controller ?: return
+        if (c.mediaItemCount > 0) return
+        c.setMediaItems(items, startIndex, positionMs)
+        c.prepare()
     }
 
     /** Restores saved shuffle/repeat modes. */

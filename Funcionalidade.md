@@ -36,6 +36,11 @@ Android.
 - **Erros:** um ficheiro apagado ou ilegível mostra uma mensagem discreta e a reprodução avança
   para a seguinte, sem entrar em ciclo se todos os ficheiros falharem.
 - **Modos guardados:** aleatório e repetição mantêm-se entre sessões.
+- **Retomar a fila:** ao reabrir a app depois de o Android (ou tu) a fechar, a última fila volta
+  a estar carregada, na mesma faixa e no mesmo ponto, **em pausa** — nunca começa a tocar sozinha.
+  As faixas são reconhecidas mesmo que o Android as reindexe; as que entretanto foram apagadas
+  são ignoradas, e os recortes atuais são aplicados. Se a app for morta enquanto toca, volta ao
+  último ponto guardado (no máximo 15 s antes).
 
 ## 3. Segundo plano, notificação e ecrã bloqueado
 
@@ -170,7 +175,6 @@ Todas as definições ficam guardadas entre sessões.
 
 ## Limitações conhecidas
 
-- A fila de reprodução não é retomada depois de a app ser terminada pelo sistema.
 - Etiquetas ID3 mal codificadas aparecem com caracteres estranhos.
 - Em MP3 VBR, o início de um recorte pode desviar 1–2 segundos.
 - No EMUI em modo escuro, a barra de estado fica escura mesmo no tema claro (comportamento do

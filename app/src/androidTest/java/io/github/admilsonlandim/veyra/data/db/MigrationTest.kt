@@ -42,7 +42,7 @@ class MigrationTest {
             ApplicationProvider.getApplicationContext(),
             VeyraDatabase::class.java,
             dbName,
-        ).addMigrations(VeyraDatabase.MIGRATION_1_2, VeyraDatabase.MIGRATION_2_3).build()
+        ).addMigrations(*ALL_MIGRATIONS).build()
         try {
             val playlists = db.playlistDao().observePlaylists().first()
             assertEquals(listOf("Treino"), playlists.map { it.name })
@@ -76,7 +76,7 @@ class MigrationTest {
         helper.runMigrationsAndValidate(dbName, 3, true, VeyraDatabase.MIGRATION_2_3).close()
 
         val db = Room.databaseBuilder(ApplicationProvider.getApplicationContext(), VeyraDatabase::class.java, dbName)
-            .addMigrations(VeyraDatabase.MIGRATION_1_2, VeyraDatabase.MIGRATION_2_3)
+            .addMigrations(*ALL_MIGRATIONS)
             .build()
         try {
             val settings = db.trackSettingsDao()
@@ -91,5 +91,37 @@ class MigrationTest {
         } finally {
             db.close()
         }
+    }
+
+    @Test
+    fun migrate3To4_keepsDataAndAddsSavedQueue() = runTest {
+        helper.createDatabase(dbName, 3).apply {
+            execSQL("INSERT INTO playlists (id, name, created_at, updated_at) VALUES (1, 'Vibes', 1, 1)")
+            close()
+        }
+
+        // Validates the migrated schema against app/schemas/.../4.json.
+        helper.runMigrationsAndValidate(dbName, 4, true, VeyraDatabase.MIGRATION_3_4).close()
+
+        val db = Room.databaseBuilder(ApplicationProvider.getApplicationContext(), VeyraDatabase::class.java, dbName)
+            .addMigrations(*ALL_MIGRATIONS)
+            .build()
+        try {
+            assertEquals("Vibes", db.playlistDao().observePlaylists().first().single().name)
+
+            val queue = db.savedQueueDao()
+            assertEquals(emptyList<SavedQueueItemEntity>(), queue.items())
+            val first = TrackKey(1, "Music/", "a.mp3", 100, 1_000)
+            val second = TrackKey(2, "Music/", "b.mp3", 200, 2_000)
+            queue.replace(listOf(first, second))
+            queue.replace(listOf(second, first))
+            assertEquals(listOf(second, first), queue.items().map { it.key })
+        } finally {
+            db.close()
+        }
+    }
+
+    private companion object {
+        val ALL_MIGRATIONS = arrayOf(VeyraDatabase.MIGRATION_1_2, VeyraDatabase.MIGRATION_2_3, VeyraDatabase.MIGRATION_3_4)
     }
 }

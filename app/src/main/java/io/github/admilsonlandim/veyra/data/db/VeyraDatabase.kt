@@ -16,10 +16,16 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * 1. Playlists and their entries (Phase 6).
  * 2. track_settings: per-track start/end clip (Phase 7).
  * 3. track_settings.mode: "Custom" clip or "Full" (always the whole file) (Phase 9).
+ * 4. saved_queue: the last play queue, to resume it after the app is closed (Phase 12).
  */
 @Database(
-    entities = [PlaylistEntity::class, PlaylistTrackEntity::class, TrackSettingsEntity::class],
-    version = 3,
+    entities = [
+        PlaylistEntity::class,
+        PlaylistTrackEntity::class,
+        TrackSettingsEntity::class,
+        SavedQueueItemEntity::class,
+    ],
+    version = 4,
     exportSchema = true,
 )
 abstract class VeyraDatabase : RoomDatabase() {
@@ -27,6 +33,8 @@ abstract class VeyraDatabase : RoomDatabase() {
     abstract fun playlistDao(): PlaylistDao
 
     abstract fun trackSettingsDao(): TrackSettingsDao
+
+    abstract fun savedQueueDao(): SavedQueueDao
 
     companion object {
         private const val NAME = "veyra.db"
@@ -60,6 +68,22 @@ abstract class VeyraDatabase : RoomDatabase() {
             }
         }
 
+        /** Adds saved_queue. The SQL matches app/schemas/.../4.json exactly. */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `saved_queue` (" +
+                        "`position` INTEGER NOT NULL, " +
+                        "`media_store_id` INTEGER NOT NULL, " +
+                        "`relative_path` TEXT, " +
+                        "`display_name` TEXT, " +
+                        "`size_bytes` INTEGER NOT NULL, " +
+                        "`duration_ms` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`position`))",
+                )
+            }
+        }
+
         @Volatile
         private var instance: VeyraDatabase? = null
 
@@ -67,7 +91,7 @@ abstract class VeyraDatabase : RoomDatabase() {
         fun get(context: Context): VeyraDatabase =
             instance ?: synchronized(this) {
                 instance ?: Room.databaseBuilder(context.applicationContext, VeyraDatabase::class.java, NAME)
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .build()
                     .also { instance = it }
             }

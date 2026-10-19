@@ -25,6 +25,7 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import io.github.admilsonlandim.veyra.MainActivity
 import io.github.admilsonlandim.veyra.R
+import io.github.admilsonlandim.veyra.data.db.VeyraDatabase
 import io.github.admilsonlandim.veyra.data.media.ArtworkLoader
 import io.github.admilsonlandim.veyra.data.media.ArtworkSize
 import io.github.admilsonlandim.veyra.data.settings.AppPreferences
@@ -97,12 +98,15 @@ class PlaybackService : MediaSessionService() {
                 session.setMediaButtonPreferences(modeButtons.buttonsFor(player))
         })
         attachSettings(player)
+        queueSaver = QueueSaver(player, VeyraDatabase.get(this).savedQueueDao(), AppPreferences.get(this), serviceScope)
+            .also { it.start() }
         // Also covers a service restarted by the system with an empty player.
         scheduleIdleStop()
     }
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val audioEffects by lazy { AudioEffectsController(this) }
+    private var queueSaver: QueueSaver? = null
 
     /**
      * Applies the stored sound settings to the player and keeps them applied: skip silence, and
@@ -145,7 +149,8 @@ class PlaybackService : MediaSessionService() {
     /**
      * Media3 returns START_STICKY, so after the process is killed the system recreates the
      * service with an empty player while the old "playing" notification lingers. The queue is
-     * not persisted, so there is nothing to resume: don't ask to be restarted.
+     * restored by the UI when the app is opened again (see QueueSaver), not by the system
+     * restarting the service: don't ask to be restarted.
      */
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
@@ -154,6 +159,7 @@ class PlaybackService : MediaSessionService() {
 
     override fun onDestroy() {
         idleHandler.removeCallbacks(stopWhenIdle)
+        queueSaver?.stop()
         artworkExecutor.shutdownNow()
         serviceScope.cancel()
         audioEffects.release()
