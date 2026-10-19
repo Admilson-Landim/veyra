@@ -112,11 +112,65 @@
     <string name="clip_saved">Recorte guardado.</string>
     <string name="clip_reset_done">Recorte removido.</string>
 
+    <string name="library_play_all">Tocar tudo</string>
+    <string name="library_shuffle">Aleatório</string>
+    <string name="library_sort_current">Ordenar por: %1$s</string>
+    <string name="sort_title">Título</string>
+    <string name="sort_artist">Artista</string>
+    <string name="sort_album">Álbum</string>
+    <string name="sort_date_added">Adicionadas recentemente</string>
+    <string name="sort_duration">Duração</string>
+
+    <string name="options_add_to_playlist">Adicionar a uma playlist</string>
+    <string name="options_properties">Propriedades</string>
+    <string name="options_set_ringtone">Definir como toque</string>
+    <string name="ringtone_call">Toque de chamada</string>
+    <string name="ringtone_notification">Som de notificação</string>
+    <string name="ringtone_alarm">Som de alarme</string>
+    <string name="ringtone_full_file_note">O toque usa o ficheiro completo: o recorte de início e fim não se aplica.</string>
+    <string name="ringtone_permission_title">Permitir alterar as definições do sistema</string>
+    <string name="ringtone_permission_message">Para definir um toque, o Android exige que autorizes o Veyra a modificar as definições do sistema. Abre as definições, ativa a opção para o Veyra e volta para tentar de novo.</string>
+    <string name="ringtone_open_settings">Abrir definições</string>
+    <string name="ringtone_set_call">\u201c%1$s\u201d definida como toque de chamada.</string>
+    <string name="ringtone_set_notification">\u201c%1$s\u201d definida como som de notificação.</string>
+    <string name="ringtone_set_alarm">\u201c%1$s\u201d definida como som de alarme.</string>
+    <string name="ringtone_failed">Não foi possível definir o toque.</string>
+
+    <string name="properties_title">Propriedades</string>
+    <string name="properties_unknown">Desconhecido</string>
+    <string name="properties_loading">A ler o ficheiro…</string>
+    <string name="prop_title">Título</string>
+    <string name="prop_artist">Artista</string>
+    <string name="prop_album">Álbum</string>
+    <string name="prop_year">Ano</string>
+    <string name="prop_genre">Género</string>
+    <string name="prop_track_number">N.º da faixa</string>
+    <string name="prop_duration">Duração</string>
+    <string name="prop_format">Formato</string>
+    <string name="prop_bitrate">Taxa de bits</string>
+    <string name="prop_sample_rate">Taxa de amostragem</string>
+    <string name="prop_size">Tamanho</string>
+    <string name="prop_path">Caminho</string>
+    <string name="prop_date_added">Adicionada em</string>
+
     <string name="add_to_playlist_title">Adicionar a playlist</string>
-    <string name="add_to_playlist">Adicionar a playlist</string>
     <string name="added_to_playlist">Adicionada a \u201c%1$s\u201d.</string>
 
     <string name="settings_title">Definições</string>
-    <string name="settings_empty_title">Definições em breve</string>
-    <string name="settings_empty_message">As opções de personalização do Veyra ainda não estão disponíveis.</string>
+    <string name="settings_section_library">Biblioteca</string>
+    <string name="settings_excluded_folders">Pastas excluídas</string>
+    <string name="settings_excluded_folders_hint">As faixas destas pastas não aparecem na Biblioteca. Por defeito, as pastas habituais de gravações e notas de voz.</string>
+    <string name="settings_no_excluded_folders">Nenhuma pasta excluída.</string>
+    <string name="settings_remove_folder">Deixar de excluir %1$s</string>
+    <string name="settings_add_folder">Excluir uma pasta</string>
+    <string name="settings_add_folder_title">Excluir pasta</string>
+    <string name="settings_add_folder_empty">Não há outras pastas com música.</string>
+    <string name="settings_reset_folders">Repor pastas padrão</string>
+    <string name="settings_device_images">Procurar capas em imagens do dispositivo</string>
+    <string name="settings_device_images_detail">Quando a faixa não tem capa própria, usar uma imagem com o mesmo nome, a capa da pasta ou a miniatura do VidMate.</string>
+    <string name="settings_skip_short">Ignorar faixas curtas</string>
+    <string name="settings_skip_short_detail">Esconder faixas com menos de %1$d segundos</string>
+    <string name="settings_min_duration_minus">Menos 5 segundos</string>
+    <string name="settings_min_duration_plus">Mais 5 segundos</string>
+    <string name="settings_close">Fechar</string>
 </resources>

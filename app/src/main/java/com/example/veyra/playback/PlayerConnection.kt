@@ -101,12 +101,24 @@ class PlayerConnection(context: Context) {
             }
         }
 
-    /** Replaces the queue with [tracks] and starts playing at [startIndex], each with its clip. */
-    fun playQueue(tracks: List<Track>, startIndex: Int, clipFor: (Track) -> TrackClip?) {
+    /**
+     * Replaces the queue with [tracks] and starts playing at [startIndex], each with its clip.
+     * [shuffle], when given, sets the player's shuffle mode for this queue ("Play all" turns it
+     * off, "Shuffle" turns it on); null keeps the current mode.
+     */
+    fun playQueue(tracks: List<Track>, startIndex: Int, shuffle: Boolean? = null, clipFor: (Track) -> TrackClip?) {
         val c = controller ?: return
         c.setMediaItems(tracks.map { it.toMediaItem(clipFor(it)) }, startIndex, 0L)
+        if (shuffle != null) c.shuffleModeEnabled = shuffle
         c.prepare()
         c.play()
+    }
+
+    /** Restores saved shuffle/repeat modes. */
+    fun setModes(shuffle: Boolean, repeat: RepeatMode) {
+        val c = controller ?: return
+        c.shuffleModeEnabled = shuffle
+        c.repeatMode = repeat.toPlayerRepeatMode()
     }
 
     /** Position in the file (not in the clipped range) of the current item, or null if none. */

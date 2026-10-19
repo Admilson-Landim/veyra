@@ -15,9 +15,11 @@ data class Track(
     val albumId: Long,
     val durationMs: Long,
     val displayName: String?,
-    /** Folder relative to the storage root (e.g. "Music/Album/"). Only available on Android 10+. */
+    /** Folder relative to the storage root (e.g. "Music/Album/"); derived from the file path before Android 10. */
     val relativePath: String?,
     val sizeBytes: Long,
     /** Last modification time, in seconds since the epoch (MediaStore's unit). */
     val dateModifiedSeconds: Long,
+    /** When MediaStore first indexed the file, in seconds since the epoch. */
+    val dateAddedSeconds: Long = 0,
 )

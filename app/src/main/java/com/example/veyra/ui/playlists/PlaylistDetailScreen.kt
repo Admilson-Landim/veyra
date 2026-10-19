@@ -1,7 +1,7 @@
 package com.example.veyra.ui.playlists
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -56,7 +56,8 @@ data class PlaylistDetailActions(
     val onDelete: () -> Unit,
     val onMove: (from: Int, to: Int) -> Unit,
     val onRemove: (entryId: Long) -> Unit,
-    val onAdjustClip: (Track) -> Unit,
+    /** Long-press or "Track options" on an available entry. */
+    val onTrackOptions: (Track) -> Unit,
 )
 
 @Composable
@@ -140,7 +141,7 @@ fun PlaylistDetailScreen(
                     onMoveDown = { actions.onMove(index, index + 1) },
                     onRemove = { actions.onRemove(item.entry.id) },
                     clip = item.track?.let { clips[it.id] },
-                    onAdjustClip = item.track?.let { track -> { actions.onAdjustClip(track) } },
+                    onTrackOptions = item.track?.let { track -> { actions.onTrackOptions(track) } },
                 )
             }
         }
@@ -160,7 +161,7 @@ private fun EntryRow(
     onRemove: () -> Unit,
     clip: ResolvedClip?,
     /** Null for unavailable entries. */
-    onAdjustClip: (() -> Unit)?,
+    onTrackOptions: (() -> Unit)?,
 ) {
     var menuOpen by rememberSaveable { mutableStateOf(false) }
     val unavailableLabel = stringResource(R.string.playlist_track_unavailable)
@@ -171,9 +172,11 @@ private fun EntryRow(
         modifier = Modifier
             .fillMaxWidth()
             .background(if (isCurrent) MaterialTheme.colorScheme.surfaceContainer else Color.Transparent)
-            .clickable(
+            .combinedClickable(
                 enabled = item.isAvailable,
                 onClickLabel = stringResource(R.string.track_play_action),
+                onLongClickLabel = stringResource(R.string.track_options),
+                onLongClick = onTrackOptions,
                 onClick = onPlay,
             )
             .heightIn(min = 64.dp)
@@ -243,10 +246,10 @@ private fun EntryRow(
                     enabled = canMoveDown,
                     onClick = { menuOpen = false; onMoveDown() },
                 )
-                if (onAdjustClip != null) {
+                if (onTrackOptions != null) {
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.clip_adjust)) },
-                        onClick = { menuOpen = false; onAdjustClip() },
+                        text = { Text(stringResource(R.string.track_options)) },
+                        onClick = { menuOpen = false; onTrackOptions() },
                     )
                 }
                 DropdownMenuItem(

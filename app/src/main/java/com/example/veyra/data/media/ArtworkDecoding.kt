@@ -33,3 +33,38 @@ fun <T : Any> firstAvailable(vararg sources: () -> T?): T? {
     }
     return null
 }
+
+/** A crop rectangle; [right] and [bottom] are exclusive. */
+data class CropBounds(val left: Int, val top: Int, val right: Int, val bottom: Int) {
+    val width: Int get() = right - left
+    val height: Int get() = bottom - top
+}
+
+/**
+ * Bounds without the dark bars around a letterboxed image (e.g. a 16:9 video frame inside a 4:3
+ * video thumbnail). Bars are whole rows/columns that are [isDarkRow]/[isDarkColumn]. Each side
+ * loses at most [maxTrimFraction] of the size, and nothing is trimmed if less than half would
+ * remain, so a genuinely dark picture is left alone.
+ */
+fun letterboxBounds(
+    width: Int,
+    height: Int,
+    isDarkRow: (Int) -> Boolean,
+    isDarkColumn: (Int) -> Boolean,
+    maxTrimFraction: Float = 0.3f,
+): CropBounds {
+    val full = CropBounds(0, 0, width, height)
+    if (width <= 0 || height <= 0) return full
+    val maxRows = (height * maxTrimFraction).toInt()
+    val maxCols = (width * maxTrimFraction).toInt()
+    var top = 0
+    while (top < maxRows && isDarkRow(top)) top++
+    var bottom = height
+    while (height - bottom < maxRows && isDarkRow(bottom - 1)) bottom--
+    var left = 0
+    while (left < maxCols && isDarkColumn(left)) left++
+    var right = width
+    while (width - right < maxCols && isDarkColumn(right - 1)) right--
+    val bounds = CropBounds(left, top, right, bottom)
+    return if (bounds.width * 2 < width || bounds.height * 2 < height) full else bounds
+}

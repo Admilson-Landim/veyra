@@ -14,16 +14,23 @@ import com.example.veyra.data.db.TrackSettingsEntity
 import com.example.veyra.data.db.VeyraDatabase
 import com.example.veyra.data.media.Track
 import com.example.veyra.data.media.toTrackKey
+import com.example.veyra.data.settings.AppPreferences
+import com.example.veyra.data.settings.PlaybackModes
 import com.example.veyra.playback.PlaybackError
 import com.example.veyra.playback.PlayerConnection
 import com.example.veyra.playback.PlayerState
 import com.example.veyra.ui.library.LibraryUiState
+import com.example.veyra.ui.library.allTracksOrNull
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.dropWhile
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -38,12 +45,13 @@ class PlayerViewModel(
     private val connection: PlayerConnection,
     private val settingsDao: TrackSettingsDao,
     library: Flow<LibraryUiState>,
+    private val preferences: AppPreferences,
     private val clock: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
 
     private val libraryTracks: StateFlow<List<Track>> =
         library
-            .map { (it as? LibraryUiState.Content)?.tracks ?: emptyList() }
+            .map { it.allTracksOrNull ?: emptyList() }
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val libraryById: StateFlow<Map<Long, Track>> =
@@ -74,6 +82,23 @@ class PlayerViewModel(
                 )
             }
         }
+        // Shuffle and repeat survive app restarts: restore them into an idle player (a running
+        // service keeps its own state), then save every change.
+        viewModelScope.launch {
+            val connected = connection.state.first { it.isConnected }
+            val restored = if (connected.queueSize == 0) {
+                preferences.playbackModes.first().also { connection.setModes(it.shuffle, it.repeat) }
+            } else {
+                null
+            }
+            connection.state
+                .filter { it.isConnected }
+                .map { PlaybackModes(it.shuffleEnabled, it.repeatMode) }
+                .distinctUntilChanged()
+                // Until the player reports the restored modes, the old ones must not be saved.
+                .dropWhile { restored != null && it != restored }
+                .collect { preferences.setPlaybackModes(it) }
+        }
     }
 
     // WhileSubscribed with no timeout: the position ticker stops as soon as the UI
@@ -84,8 +109,8 @@ class PlayerViewModel(
 
     val errors: SharedFlow<PlaybackError> = connection.errors
 
-    fun play(tracks: List<Track>, startIndex: Int) =
-        connection.playQueue(tracks, startIndex) { track -> clips.value[track.id]?.clip }
+    fun play(tracks: List<Track>, startIndex: Int, shuffle: Boolean? = null) =
+        connection.playQueue(tracks, startIndex, shuffle) { track -> clips.value[track.id]?.clip }
 
     fun togglePlayPause() = connection.togglePlayPause()
     fun skipToNext() = connection.skipToNext()
@@ -131,6 +156,7 @@ class PlayerViewModel(
                     connection = PlayerConnection(app),
                     settingsDao = VeyraDatabase.get(app).trackSettingsDao(),
                     library = library,
+                    preferences = AppPreferences.get(app),
                 )
             }
         }

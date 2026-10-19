@@ -36,6 +36,12 @@ android {
     buildFeatures {
         compose = true
     }
+    lint {
+        // READ_MEDIA_IMAGES is only used to find cover images by folder and name; partial
+        // "selected photos" access (Android 14) cannot serve that, so it is not handled. The
+        // manifest's tools:ignore is not honoured by this check, hence the project-level switch.
+        disable += "SelectedPhotoAccess"
+    }
 }
 
 room {
@@ -57,6 +63,7 @@ dependencies {
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.session)
     implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.datastore.preferences)
     // Aligns the app with room-testing (see libs.versions.toml).
     implementation(libs.kotlinx.serialization.core)
     ksp(libs.androidx.room.compiler)

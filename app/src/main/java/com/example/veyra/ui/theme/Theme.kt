@@ -41,7 +41,7 @@ internal val VeyraDarkColorScheme: ColorScheme = darkColorScheme(
 )
 
 // Provisional light scheme so the theme structure already supports both modes.
-// It is not exposed in the UI yet; the light theme is designed in Phase 8.
+// It is not exposed in the UI yet; the light theme is designed in Phase 10.
 internal val VeyraLightColorScheme: ColorScheme = lightColorScheme(
     primary = VeyraPalette.Bronze,
     onPrimary = VeyraPalette.Ivory,

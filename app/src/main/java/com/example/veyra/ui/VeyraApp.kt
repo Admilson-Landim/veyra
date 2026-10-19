@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -54,6 +56,7 @@ import com.example.veyra.ui.library.AudioPermissionMonitor
 import com.example.veyra.ui.library.LibraryScreen
 import com.example.veyra.ui.library.LibraryUiState
 import com.example.veyra.ui.library.LibraryViewModel
+import com.example.veyra.ui.library.allTracksOrNull
 import com.example.veyra.ui.player.MiniPlayer
 import com.example.veyra.ui.player.PlayerActions
 import com.example.veyra.ui.player.PlayerScreen
@@ -68,6 +71,13 @@ import com.example.veyra.ui.playlists.PlaylistsScreen
 import com.example.veyra.ui.playlists.PlaylistsViewModel
 import com.example.veyra.ui.settings.SettingsScreen
 import com.example.veyra.ui.theme.components.VeyraHeader
+import androidx.compose.ui.platform.LocalContext
+import com.example.veyra.ui.options.RingtoneSetter
+import com.example.veyra.ui.options.RingtoneTarget
+import com.example.veyra.ui.options.TrackOptionsActions
+import com.example.veyra.ui.options.TrackOptionsSheet
+import com.example.veyra.ui.options.TrackPropertiesSheet
+import com.example.veyra.ui.settings.SettingsViewModel
 import kotlinx.coroutines.launch
 
 // Width from which a navigation rail replaces the bottom bar (Material "medium" window class).
@@ -92,6 +102,11 @@ fun VeyraApp(
     var openPlaylistId by rememberSaveable { mutableStateOf<Long?>(null) }
     var addToPlaylistTrack by remember { mutableStateOf<Track?>(null) }
     var adjustClipTrack by remember { mutableStateOf<Track?>(null) }
+    var optionsTrack by remember { mutableStateOf<Track?>(null) }
+    var propertiesTrack by remember { mutableStateOf<Track?>(null) }
+    var ringtonePermissionNeeded by rememberSaveable { mutableStateOf(false) }
+    val settingsViewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.factory(libraryViewModel.uiState))
+    val context = LocalContext.current
     var nameRequest by remember { mutableStateOf<NameRequest?>(null) }
 
     LaunchedEffect(openPlayerRequests) {
@@ -124,7 +139,7 @@ fun VeyraApp(
 
     // The current track, as known by the library: needed to add it to a playlist from the player.
     val currentTrack = remember(libraryState, playerState.currentMediaId) {
-        (libraryState as? LibraryUiState.Content)?.tracks?.firstOrNull { it.id.toString() == playerState.currentMediaId }
+        libraryState.allTracksOrNull?.firstOrNull { it.id.toString() == playerState.currentMediaId }
     }
 
     val showPlayer = playerOpen && playerState.hasMedia
@@ -176,7 +191,7 @@ fun VeyraApp(
                     }
                     val contentModifier = Modifier.weight(1f)
                     if (destination == VeyraDestination.Settings) {
-                        SettingsScreen(contentModifier)
+                        SettingsScreen(settingsViewModel, contentModifier)
                     } else {
                         // Library and Playlists share the mini-player at the bottom.
                         Column(contentModifier) {
@@ -185,8 +200,10 @@ fun VeyraApp(
                                 LibraryScreen(
                                     currentMediaId = playerState.currentMediaId,
                                     onTrackClick = playerViewModel::play,
-                                    onAddToPlaylist = { addToPlaylistTrack = it },
-                                    onAdjustClip = { adjustClipTrack = it },
+                                    onTrackOptions = { optionsTrack = it },
+                                    onPlayQueue = { request ->
+                                        playerViewModel.play(request.tracks, request.startIndex, request.shuffle)
+                                    },
                                     clips = clips,
                                     viewModel = libraryViewModel,
                                     modifier = sectionModifier,
@@ -201,7 +218,7 @@ fun VeyraApp(
                                     onPlay = playerViewModel::play,
                                     onCreate = { nameRequest = NameRequest.Create(thenAdd = null) },
                                     onRename = { id, name -> nameRequest = NameRequest.Rename(id, name) },
-                                    onAdjustClip = { adjustClipTrack = it },
+                                    onTrackOptions = { optionsTrack = it },
                                     clips = clips,
                                     modifier = sectionModifier,
                                 )
@@ -211,6 +228,8 @@ fun VeyraApp(
                                     state = playerState,
                                     onOpen = { playerOpen = true },
                                     onTogglePlayPause = playerViewModel::togglePlayPause,
+                                    onNext = playerViewModel::skipToNext,
+                                    onPrevious = playerViewModel::skipToPrevious,
                                 )
                             }
                         }
@@ -229,7 +248,7 @@ fun VeyraApp(
                 actions = playerActions,
                 onClose = { playerOpen = false },
                 snackbarHostState = snackbarHostState,
-                onAddToPlaylist = currentTrack?.let { track -> { addToPlaylistTrack = track } },
+                onTrackOptions = currentTrack?.let { track -> { optionsTrack = track } },
                 onAdjustClip = currentTrack?.let { track -> { adjustClipTrack = track } },
                 clip = currentTrack?.let { clips[it.id] },
             )
@@ -249,6 +268,60 @@ fun VeyraApp(
                 nameRequest = NameRequest.Create(thenAdd = track)
             },
             onDismiss = { addToPlaylistTrack = null },
+        )
+    }
+
+    optionsTrack?.let { track ->
+        TrackOptionsSheet(
+            track = track,
+            actions = TrackOptionsActions(
+                onAddToPlaylist = { addToPlaylistTrack = it },
+                onAdjustClip = { adjustClipTrack = it },
+                onProperties = { propertiesTrack = it },
+                onSetRingtone = { t, target ->
+                    if (!RingtoneSetter.canWrite(context)) {
+                        // Explain first; the system page only offers an on/off switch.
+                        ringtonePermissionNeeded = true
+                    } else {
+                        scope.launch {
+                            val ok = RingtoneSetter.set(context, t, target)
+                            val name = t.title ?: t.displayName.orEmpty()
+                            showMessage(
+                                if (!ok) resources.getString(R.string.ringtone_failed) else resources.getString(
+                                    when (target) {
+                                        RingtoneTarget.Call -> R.string.ringtone_set_call
+                                        RingtoneTarget.Notification -> R.string.ringtone_set_notification
+                                        RingtoneTarget.Alarm -> R.string.ringtone_set_alarm
+                                    },
+                                    name,
+                                ),
+                            )
+                        }
+                    }
+                },
+            ),
+            onDismiss = { optionsTrack = null },
+        )
+    }
+    propertiesTrack?.let { track -> TrackPropertiesSheet(track, onDismiss = { propertiesTrack = null }) }
+
+    if (ringtonePermissionNeeded) {
+        AlertDialog(
+            onDismissRequest = { ringtonePermissionNeeded = false },
+            title = { Text(stringResource(R.string.ringtone_permission_title)) },
+            text = { Text(stringResource(R.string.ringtone_permission_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    ringtonePermissionNeeded = false
+                    context.startActivity(RingtoneSetter.permissionIntent(context))
+                }) { Text(stringResource(R.string.ringtone_open_settings)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { ringtonePermissionNeeded = false }) {
+                    Text(stringResource(R.string.playlist_cancel_action))
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         )
     }
 
@@ -312,7 +385,7 @@ private fun PlaylistsTab(
     onPlay: (List<Track>, Int) -> Unit,
     onCreate: () -> Unit,
     onRename: (playlistId: Long, currentName: String) -> Unit,
-    onAdjustClip: (Track) -> Unit,
+    onTrackOptions: (Track) -> Unit,
     clips: Map<Long, ResolvedClip>,
     modifier: Modifier = Modifier,
 ) {
@@ -344,7 +417,7 @@ private fun PlaylistsTab(
                     onDelete = { confirmDelete = true },
                     onMove = { from, to -> viewModel.moveEntry(openPlaylistId, from, to) },
                     onRemove = { entryId -> viewModel.removeEntry(openPlaylistId, entryId) },
-                    onAdjustClip = onAdjustClip,
+                    onTrackOptions = onTrackOptions,
                 ),
                 modifier = modifier,
                 clips = clips,

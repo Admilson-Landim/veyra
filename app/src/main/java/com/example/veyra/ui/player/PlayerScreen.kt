@@ -72,9 +72,9 @@ fun PlayerScreen(
     onClose: () -> Unit,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
-    /** Null while the current track is not known in the library (the button is hidden). */
-    onAddToPlaylist: (() -> Unit)? = null,
-    /** Same as [onAddToPlaylist], for the start/end editor. */
+    /** Opens the track options sheet; null while the current track is not known in the library. */
+    onTrackOptions: (() -> Unit)? = null,
+    /** Same as [onTrackOptions], for the start/end editor. */
     onAdjustClip: (() -> Unit)? = null,
     /** The current track's clip, shown as a discreet line under the artist. */
     clip: ResolvedClip? = null,
@@ -109,18 +109,26 @@ fun PlayerScreen(
                                 )
                             }
                         }
-                        if (onAddToPlaylist != null) {
-                            IconButton(onClick = onAddToPlaylist) {
+                        if (onTrackOptions != null) {
+                            IconButton(onClick = onTrackOptions) {
                                 Icon(
-                                    painter = painterResource(R.drawable.ic_playlist_add),
-                                    contentDescription = stringResource(R.string.add_to_playlist),
+                                    painter = painterResource(R.drawable.ic_more_vert),
+                                    contentDescription = stringResource(R.string.track_options),
                                     tint = MaterialTheme.colorScheme.onSurface,
                                 )
                             }
                         }
                     }
                     Spacer(Modifier.height(16.dp))
-                    TrackArtwork(contentUri = state.artworkUri, size = artworkDp, artworkSize = ArtworkSize.Large)
+                    // Swipe the cover left/right to change track; the seek slider sits outside it.
+                    SwipeToSkip(
+                        onNext = actions.onNext,
+                        onPrevious = actions.onPrevious,
+                        nextLabel = stringResource(R.string.player_next),
+                        previousLabel = stringResource(R.string.player_previous),
+                    ) {
+                        TrackArtwork(contentUri = state.artworkUri, size = artworkDp, artworkSize = ArtworkSize.Large)
+                    }
                     Spacer(Modifier.height(32.dp))
                     Column(Modifier.widthIn(max = 480.dp)) {
                         Text(

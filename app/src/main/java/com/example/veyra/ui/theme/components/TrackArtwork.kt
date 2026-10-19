@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -40,11 +41,14 @@ fun TrackArtwork(
 ) {
     val context = LocalContext.current
     val loader = remember(context) { ArtworkLoader.get(context) }
+    // Reloads when the loader's sources change (new images, setting toggled).
+    val generation by loader.generation.collectAsState()
     // Leaving the composition (e.g. the row scrolls off screen) cancels the load.
     val bitmap by produceState(
         initialValue = contentUri?.let { loader.cached(it, artworkSize) },
         contentUri,
         artworkSize,
+        generation,
     ) {
         // Reset first, so a new track never shows the previous track's cover while loading.
         value = contentUri?.let { loader.cached(it, artworkSize) }

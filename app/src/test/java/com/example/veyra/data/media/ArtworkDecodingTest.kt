@@ -63,4 +63,29 @@ class ArtworkDecodingTest {
     fun firstAvailable_doesNotSwallowCancellation() {
         firstAvailable({ throw kotlinx.coroutines.CancellationException("scrolled away") }, { "embedded" })
     }
+
+    @Test
+    fun letterbox_trimsDarkBarsTopAndBottom() {
+        // 100x80 image with 10 dark rows on top and bottom.
+        val bounds = letterboxBounds(100, 80, isDarkRow = { it < 10 || it >= 70 }, isDarkColumn = { false })
+        assertEquals(CropBounds(0, 10, 100, 70), bounds)
+    }
+
+    @Test
+    fun letterbox_trimIsCappedPerSide() {
+        val bounds = letterboxBounds(100, 100, isDarkRow = { it < 50 }, isDarkColumn = { false })
+        assertEquals(30, bounds.top) // at most 30% per side
+    }
+
+    @Test
+    fun letterbox_entirelyDarkImage_isLeftAlone() {
+        val bounds = letterboxBounds(100, 100, isDarkRow = { true }, isDarkColumn = { true })
+        // 30% off every side would leave 40%: below half, so nothing is trimmed.
+        assertEquals(CropBounds(0, 0, 100, 100), bounds)
+    }
+
+    @Test
+    fun letterbox_noBars_keepsFullImage() {
+        assertEquals(CropBounds(0, 0, 50, 40), letterboxBounds(50, 40, { false }, { false }))
+    }
 }

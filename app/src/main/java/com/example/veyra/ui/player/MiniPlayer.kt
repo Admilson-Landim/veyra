@@ -36,6 +36,8 @@ fun MiniPlayer(
     state: PlayerState,
     onOpen: () -> Unit,
     onTogglePlayPause: () -> Unit,
+    onNext: () -> Unit,
+    onPrevious: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(color = MaterialTheme.colorScheme.surfaceContainerHigh, modifier = modifier.fillMaxWidth()) {
@@ -50,39 +52,47 @@ fun MiniPlayer(
                     .fillMaxWidth()
                     .height(2.dp),
             )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .clickable(onClickLabel = stringResource(R.string.player_open_action), onClick = onOpen)
-                    .heightIn(min = 64.dp)
-                    .padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+            // Swipe left/right on the mini-player to change track.
+            SwipeToSkip(
+                onNext = onNext,
+                onPrevious = onPrevious,
+                nextLabel = stringResource(R.string.player_next),
+                previousLabel = stringResource(R.string.player_previous),
             ) {
-                TrackArtwork(contentUri = state.artworkUri, size = 44.dp, artworkSize = ArtworkSize.Thumbnail)
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        text = state.title ?: stringResource(R.string.track_unknown_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = state.artist ?: stringResource(R.string.track_unknown_artist),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                IconButton(onClick = onTogglePlayPause) {
-                    Icon(
-                        painter = painterResource(if (state.showPause) R.drawable.ic_pause else R.drawable.ic_play),
-                        contentDescription = stringResource(
-                            if (state.showPause) R.string.player_pause else R.string.player_play,
-                        ),
-                        tint = MaterialTheme.colorScheme.onSurface,
-                    )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clickable(onClickLabel = stringResource(R.string.player_open_action), onClick = onOpen)
+                        .heightIn(min = 64.dp)
+                        .padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+                ) {
+                    TrackArtwork(contentUri = state.artworkUri, size = 44.dp, artworkSize = ArtworkSize.Thumbnail)
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            text = state.title ?: stringResource(R.string.track_unknown_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = state.artist ?: stringResource(R.string.track_unknown_artist),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    IconButton(onClick = onTogglePlayPause) {
+                        Icon(
+                            painter = painterResource(if (state.showPause) R.drawable.ic_pause else R.drawable.ic_play),
+                            contentDescription = stringResource(
+                                if (state.showPause) R.string.player_pause else R.string.player_play,
+                            ),
+                            tint = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
                 }
             }
         }
@@ -100,6 +110,8 @@ private fun MiniPlayerPreview() {
             ),
             onOpen = {},
             onTogglePlayPause = {},
+            onNext = {},
+            onPrevious = {},
         )
     }
 }

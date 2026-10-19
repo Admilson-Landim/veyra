@@ -4,7 +4,12 @@
 
     <!-- Android 13+ (API 33): granular audio permission. -->
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
-    <!-- Android 12L and earlier: broad storage read access. -->
+    <!-- Android 13+: optional, only to find covers stored as separate image files
+         (Settings > Library). Requested from that switch, never at start-up. Android 14's
+         "selected photos" partial access is not useful here: covers are looked up by folder and
+         name across all images, so with partial access they are simply not found. -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <!-- Android 12L and earlier: broad storage read access (audio and images). -->
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
@@ -14,6 +19,11 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <!-- Keeps the CPU awake while playing with the screen off (ExoPlayer wake mode). -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Special app-op permission, granted by the user in system settings, needed to set the
+         device ringtone / notification / alarm sound. -->
+    <uses-permission
+        android:name="android.permission.WRITE_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
 
     <application
         android:allowBackup="true"

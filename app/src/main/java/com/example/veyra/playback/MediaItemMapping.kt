@@ -1,5 +1,6 @@
 package com.example.veyra.playback
 
+import android.os.Bundle
 import androidx.core.net.toUri
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -7,6 +8,9 @@ import androidx.media3.common.MediaMetadata
 import com.example.veyra.data.clips.TrackClip
 import com.example.veyra.data.clips.clipToApply
 import com.example.veyra.data.media.Track
+
+/** MediaMetadata extra holding the track's content:// URI. */
+const val EXTRA_CONTENT_URI = "com.example.veyra.CONTENT_URI"
 
 /**
  * The single place where a Track becomes a MediaItem.
@@ -31,6 +35,8 @@ fun Track.toMediaItem(clip: TrackClip? = null): MediaItem =
                 .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
                 .setIsPlayable(true)
                 .setIsBrowsable(false)
+                // Lets the notification's bitmap loader find a cover stored as a separate image.
+                .setExtras(Bundle().apply { putString(EXTRA_CONTENT_URI, contentUri) })
                 .build(),
         )
         .apply {

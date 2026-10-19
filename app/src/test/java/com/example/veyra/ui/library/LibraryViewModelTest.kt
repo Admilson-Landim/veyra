@@ -2,6 +2,8 @@ package com.example.veyra.ui.library
 
 import com.example.veyra.data.media.Track
 import com.example.veyra.data.media.TrackRepository
+import com.example.veyra.data.media.TrackSort
+import com.example.veyra.data.settings.LibraryPreferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -18,6 +20,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import kotlin.random.Random
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LibraryViewModelTest {
@@ -95,7 +98,7 @@ class LibraryViewModelTest {
         viewModel.onPermissionResult(granted = false, shouldShowRationale = false)
         viewModel.onPermissionChecked(granted = true)
         advanceUntilIdle()
-        assertEquals(LibraryUiState.Empty, viewModel.uiState.value)
+        assertEquals(LibraryUiState.Empty(), viewModel.uiState.value)
     }
 
     @Test
@@ -103,7 +106,7 @@ class LibraryViewModelTest {
         observe()
         viewModel.onPermissionResult(granted = true, shouldShowRationale = false)
         advanceUntilIdle()
-        assertEquals(LibraryUiState.Empty, viewModel.uiState.value)
+        assertEquals(LibraryUiState.Empty(), viewModel.uiState.value)
     }
 
     @Test
@@ -120,7 +123,7 @@ class LibraryViewModelTest {
 
         repository.library.value = emptyList()
         advanceUntilIdle()
-        assertEquals(LibraryUiState.Empty, viewModel.uiState.value)
+        assertEquals(LibraryUiState.Empty(), viewModel.uiState.value)
     }
 
     @Test
@@ -149,9 +152,66 @@ class LibraryViewModelTest {
         assertEquals(1, repository.subscriptions)
     }
 
-    private fun track(id: Long, title: String) = Track(
+    private fun track(id: Long, title: String, duration: Long = 1_000, path: String? = null) = Track(
         id = id, contentUri = "content://media/external/audio/media/$id", title = title, artist = null,
-        album = null, albumId = 0, durationMs = 1_000, displayName = null, relativePath = null,
+        album = null, albumId = 0, durationMs = duration, displayName = null, relativePath = path,
         sizeBytes = 0, dateModifiedSeconds = 0,
     )
+
+    @Test
+    fun preferences_filterAndSortTheVisibleList_butKeepAllTracks() = runTest(dispatcher) {
+        val prefs = MutableStateFlow(LibraryPreferences(sort = TrackSort.Duration, excludedFolders = setOf("Recordings/")))
+        val vm = LibraryViewModel(repository, preferences = prefs, sortDispatcher = dispatcher)
+        backgroundScope.launch(dispatcher) { vm.uiState.collect {} }
+        repository.library.value = listOf(
+            track(1, "a", duration = 300_000),
+            track(2, "b", duration = 100_000),
+            track(3, "rec", path = "Recordings/"),
+        )
+        vm.onPermissionChecked(granted = true)
+        advanceUntilIdle()
+
+        val content = vm.uiState.value as LibraryUiState.Content
+        assertEquals(listOf(2L, 1L), content.tracks.map { it.id })
+        assertEquals(3, content.allTracks.size)
+
+        prefs.value = prefs.value.copy(sort = TrackSort.Title, skipShortTracks = true, minDurationSeconds = 200)
+        advanceUntilIdle()
+        assertEquals(listOf(1L), (vm.uiState.value as LibraryUiState.Content).tracks.map { it.id })
+    }
+
+    @Test
+    fun playAll_isVisibleOrderFromTheStart_shuffleOff() = runTest(dispatcher) {
+        observe()
+        repository.library.value = listOf(track(1, "Zeta"), track(2, "alpha"))
+        viewModel.onPermissionChecked(granted = true)
+        advanceUntilIdle()
+
+        val request = viewModel.playAllRequest()!!
+        assertEquals(listOf(2L, 1L), request.tracks.map { it.id })
+        assertEquals(0, request.startIndex)
+        assertEquals(false, request.shuffle)
+    }
+
+    @Test
+    fun shuffle_turnsShuffleOn_andStartsAtARandomVisibleTrack() = runTest(dispatcher) {
+        observe()
+        repository.library.value = listOf(track(1, "a"), track(2, "b"), track(3, "c"))
+        viewModel.onPermissionChecked(granted = true)
+        advanceUntilIdle()
+
+        val request = viewModel.shuffleRequest(Random(seed = 7))!!
+        assertEquals(listOf(1L, 2L, 3L), request.tracks.map { it.id })
+        assertEquals(true, request.shuffle)
+        assertEquals(Random(seed = 7).nextInt(3), request.startIndex)
+    }
+
+    @Test
+    fun playRequests_areNullWithoutTracks() = runTest(dispatcher) {
+        observe()
+        viewModel.onPermissionChecked(granted = true)
+        advanceUntilIdle()
+        assertEquals(null, viewModel.playAllRequest())
+        assertEquals(null, viewModel.shuffleRequest())
+    }
 }

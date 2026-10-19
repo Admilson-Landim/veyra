@@ -23,7 +23,11 @@ Engenheiro sénior de Android (Kotlin, Jetpack Compose, Material 3, AndroidX Med
 
 Superfícies secundárias em tons escuros neutros.
 
-O tema escuro é prioritário. A estrutura do tema tem de permitir um tema claro coerente (implementado na Fase 8).
+O tema escuro é prioritário. A estrutura do tema tem de permitir um tema claro coerente (implementado na Fase 10).
+
+## Plano de fases
+
+1. Fundação · 2. Biblioteca · 3. Reprodução · 4. Segundo plano · 5. Capas · 6. Playlists · 7. Início/fim por faixa · 8. Opções da faixa, biblioteca e gestos · 9. Início/fim global, saltar silêncio e equalizador · 10. Idiomas, tema claro e release.
 
 ## Stack
 

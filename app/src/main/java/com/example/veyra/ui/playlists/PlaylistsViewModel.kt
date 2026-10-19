@@ -75,8 +75,9 @@ class PlaylistsViewModel(
         combine(dao.observePlaylist(playlistId), dao.observeEntries(playlistId), library) { playlist, entries, lib ->
             if (playlist == null) return@combine PlaylistDetailState.Missing
             val (access, tracks) = when (lib) {
-                is LibraryUiState.Content -> LibraryAccess.Ready to lib.tracks
-                LibraryUiState.Empty -> LibraryAccess.Ready to emptyList()
+                // Every music file, including folders hidden from the library view.
+                is LibraryUiState.Content -> LibraryAccess.Ready to lib.allTracks
+                is LibraryUiState.Empty -> LibraryAccess.Ready to lib.allTracks
                 is LibraryUiState.PermissionRequired -> LibraryAccess.NoPermission to null
                 LibraryUiState.Loading, LibraryUiState.Error -> LibraryAccess.Loading to null
             }

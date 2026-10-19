@@ -14,6 +14,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import com.example.veyra.data.media.TrackSort
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -26,6 +31,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -97,8 +103,10 @@ fun AudioPermissionMonitor(viewModel: LibraryViewModel) {
 fun LibraryScreen(
     currentMediaId: String?,
     onTrackClick: (tracks: List<Track>, index: Int) -> Unit,
-    onAddToPlaylist: (Track) -> Unit,
-    onAdjustClip: (Track) -> Unit,
+    /** Long-press or "more options" on a row. */
+    onTrackOptions: (Track) -> Unit,
+    /** "Play all" / "Shuffle": the queue to start, built by the ViewModel from the visible list. */
+    onPlayQueue: (QueueRequest) -> Unit,
     modifier: Modifier = Modifier,
     clips: Map<Long, ResolvedClip> = emptyMap(),
     viewModel: LibraryViewModel = viewModel(factory = LibraryViewModel.Factory),
@@ -122,16 +130,23 @@ fun LibraryScreen(
         onRetry = viewModel::retry,
         currentMediaId = currentMediaId,
         onTrackClick = onTrackClick,
-        trackActions = TrackRowActions(onAddToPlaylist, onAdjustClip),
+        actions = LibraryListActions(
+            onTrackOptions = onTrackOptions,
+            onPlayAll = { viewModel.playAllRequest()?.let(onPlayQueue) },
+            onShuffle = { viewModel.shuffleRequest()?.let(onPlayQueue) },
+            onSortChange = viewModel::setSort,
+        ),
         clips = clips,
         modifier = modifier,
     )
 }
 
-/** What the options menu of a library row can do. */
-private data class TrackRowActions(
-    val onAddToPlaylist: (Track) -> Unit,
-    val onAdjustClip: (Track) -> Unit,
+/** Actions of the track list besides playing a row. */
+private data class LibraryListActions(
+    val onTrackOptions: (Track) -> Unit,
+    val onPlayAll: () -> Unit,
+    val onShuffle: () -> Unit,
+    val onSortChange: (TrackSort) -> Unit,
 )
 
 @Composable
@@ -142,7 +157,7 @@ private fun LibraryContent(
     onRetry: () -> Unit,
     currentMediaId: String?,
     onTrackClick: (tracks: List<Track>, index: Int) -> Unit,
-    trackActions: TrackRowActions,
+    actions: LibraryListActions,
     clips: Map<Long, ResolvedClip>,
     modifier: Modifier = Modifier,
 ) {
@@ -156,7 +171,7 @@ private fun LibraryContent(
                 onOpenSettings = onOpenSettings,
             )
 
-            LibraryUiState.Empty -> VeyraEmptyState(
+            is LibraryUiState.Empty -> VeyraEmptyState(
                 title = stringResource(R.string.library_empty_title),
                 message = stringResource(R.string.library_empty_message),
             )
@@ -171,7 +186,7 @@ private fun LibraryContent(
                 },
             )
 
-            is LibraryUiState.Content -> TrackList(state.tracks, currentMediaId, onTrackClick, trackActions, clips)
+            is LibraryUiState.Content -> TrackList(state.tracks, state.sort, currentMediaId, onTrackClick, actions, clips)
         }
     }
 }
@@ -220,22 +235,18 @@ private fun PermissionRequest(
 @Composable
 private fun TrackList(
     tracks: List<Track>,
+    sort: TrackSort,
     currentMediaId: String?,
     onTrackClick: (tracks: List<Track>, index: Int) -> Unit,
-    trackActions: TrackRowActions,
+    actions: LibraryListActions,
     clips: Map<Long, ResolvedClip>,
 ) {
     LazyColumn(
         contentPadding = PaddingValues(bottom = 16.dp),
         modifier = Modifier.fillMaxSize(),
     ) {
-        item(key = "track-count") {
-            Text(
-                text = pluralStringResource(R.plurals.library_track_count, tracks.size, tracks.size),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 8.dp),
-            )
+        item(key = "header") {
+            ListHeader(trackCount = tracks.size, sort = sort, actions = actions)
         }
         itemsIndexed(tracks, key = { _, track -> track.id }) { index, track ->
             TrackRow(
@@ -244,7 +255,7 @@ private fun TrackList(
                 // The queue is the library as currently shown, starting at the tapped track.
                 onClick = { onTrackClick(tracks, index) },
                 clip = clips[track.id],
-                actions = trackActions,
+                onOptions = { actions.onTrackOptions(track) },
             )
         }
     }
@@ -256,16 +267,20 @@ private fun TrackRow(
     isCurrent: Boolean,
     onClick: () -> Unit,
     clip: ResolvedClip?,
-    actions: TrackRowActions,
+    onOptions: () -> Unit,
 ) {
-    var menuOpen by rememberSaveable { mutableStateOf(false) }
     val nowPlaying = stringResource(R.string.track_now_playing)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
             .background(if (isCurrent) MaterialTheme.colorScheme.surfaceContainer else Color.Transparent)
-            .clickable(onClickLabel = stringResource(R.string.track_play_action), onClick = onClick)
+            .combinedClickable(
+                onClickLabel = stringResource(R.string.track_play_action),
+                onLongClickLabel = stringResource(R.string.track_options),
+                onLongClick = onOptions,
+                onClick = onClick,
+            )
             .heightIn(min = 64.dp)
             .padding(start = 24.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)
             // TalkBack reads title, artist and duration as one item, plus "A tocar" when current.
@@ -299,26 +314,90 @@ private fun TrackRow(
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Box {
-            IconButton(onClick = { menuOpen = true }) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_more_vert),
-                    contentDescription = stringResource(R.string.track_options),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+        IconButton(onClick = onOptions) {
+            Icon(
+                painter = painterResource(R.drawable.ic_more_vert),
+                contentDescription = stringResource(R.string.track_options),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** Count, sort menu, and "Play all" / "Shuffle" above the list. */
+@Composable
+private fun ListHeader(trackCount: Int, sort: TrackSort, actions: LibraryListActions) {
+    var sortMenuOpen by rememberSaveable { mutableStateOf(false) }
+    Column(Modifier.padding(start = 24.dp, end = 12.dp, bottom = 8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = pluralStringResource(R.plurals.library_track_count, trackCount, trackCount),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+            )
+            Box {
+                val current = stringResource(sort.labelRes())
+                val sortDescription = stringResource(R.string.library_sort_current, current)
+                TextButton(
+                    onClick = { sortMenuOpen = true },
+                    modifier = Modifier.semantics { contentDescription = sortDescription },
+                ) {
+                    Icon(painterResource(R.drawable.ic_sort), contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(current)
+                }
+                DropdownMenu(expanded = sortMenuOpen, onDismissRequest = { sortMenuOpen = false }) {
+                    TrackSort.entries.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(stringResource(option.labelRes())) },
+                            leadingIcon = {
+                                if (option == sort) {
+                                    Icon(painterResource(R.drawable.ic_check), contentDescription = null)
+                                }
+                            },
+                            onClick = {
+                                sortMenuOpen = false
+                                actions.onSortChange(option)
+                            },
+                        )
+                    }
+                }
             }
-            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.add_to_playlist)) },
-                    onClick = { menuOpen = false; actions.onAddToPlaylist(track) },
-                )
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.clip_adjust)) },
-                    onClick = { menuOpen = false; actions.onAdjustClip(track) },
-                )
+        }
+        // Two equal halves, single-line labels: no word ever breaks mid-way on narrow screens.
+        val buttonPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(end = 12.dp),
+        ) {
+            Button(onClick = actions.onPlayAll, contentPadding = buttonPadding, modifier = Modifier.weight(1f)) {
+                Icon(painterResource(R.drawable.ic_play), contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.library_play_all), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            OutlinedButton(
+                onClick = actions.onShuffle,
+                contentPadding = buttonPadding,
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+                modifier = Modifier.weight(1f),
+            ) {
+                Icon(painterResource(R.drawable.ic_shuffle), contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.library_shuffle), maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }
+}
+
+private fun TrackSort.labelRes(): Int = when (this) {
+    TrackSort.Title -> R.string.sort_title
+    TrackSort.Artist -> R.string.sort_artist
+    TrackSort.Album -> R.string.sort_album
+    TrackSort.DateAdded -> R.string.sort_date_added
+    TrackSort.Duration -> R.string.sort_duration
 }
 
 private fun appSettingsIntent(context: Context) =
@@ -342,7 +421,7 @@ private fun LibraryPermissionPreview() {
             onRetry = {},
             currentMediaId = "1",
             onTrackClick = { _, _ -> },
-            trackActions = TrackRowActions({}, {}),
+            actions = LibraryListActions({}, {}, {}, {}),
             clips = emptyMap(),
         )
     }
@@ -364,7 +443,7 @@ private fun LibraryContentPreview() {
             onRetry = {},
             currentMediaId = "1",
             onTrackClick = { _, _ -> },
-            trackActions = TrackRowActions({}, {}),
+            actions = LibraryListActions({}, {}, {}, {}),
             clips = emptyMap(),
         )
     }

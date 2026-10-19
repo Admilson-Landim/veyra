@@ -20,6 +20,11 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.example.veyra.MainActivity
 import com.example.veyra.R
+import com.example.veyra.data.media.ArtworkLoader
+import com.example.veyra.data.media.ArtworkSize
+import com.google.common.util.concurrent.MoreExecutors
+import kotlinx.coroutines.runBlocking
+import java.util.concurrent.Executors
 
 /**
  * Owns the ExoPlayer and exposes it through a MediaSession. The UI never touches the player
@@ -43,7 +48,7 @@ class PlaybackService : MediaSessionService() {
     private val idleHandler = Handler(Looper.getMainLooper())
     private val stopWhenIdle = Runnable { stopSelf() }
 
-    @OptIn(UnstableApi::class) // setBitmapLoader
+    @OptIn(UnstableApi::class) // setBitmapLoader, setMediaButtonPreferences
     override fun onCreate() {
         super.onCreate()
         val player = ExoPlayer.Builder(this)
@@ -62,10 +67,22 @@ class PlaybackService : MediaSessionService() {
             .build()
         player.addListener(SkipBrokenItems(player))
         player.addListener(IdleStopTimer())
-        mediaSession = MediaSession.Builder(this, player)
+        val modeButtons = ModeButtons(this)
+        val session = MediaSession.Builder(this, player)
             .setSessionActivity(openPlayerIntent())
             .setBitmapLoader(artworkLoader())
+            .setCallback(modeButtons)
+            .setMediaButtonPreferences(modeButtons.buttonsFor(player))
             .build()
+        mediaSession = session
+        // Keep the notification's shuffle/repeat icons in step with the player.
+        player.addListener(object : Player.Listener {
+            override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) =
+                session.setMediaButtonPreferences(modeButtons.buttonsFor(player))
+
+            override fun onRepeatModeChanged(repeatMode: Int) =
+                session.setMediaButtonPreferences(modeButtons.buttonsFor(player))
+        })
         // Also covers a service restarted by the system with an empty player.
         scheduleIdleStop()
     }
@@ -84,6 +101,7 @@ class PlaybackService : MediaSessionService() {
 
     override fun onDestroy() {
         idleHandler.removeCallbacks(stopWhenIdle)
+        artworkExecutor.shutdownNow()
         mediaSession?.run {
             player.release()
             release()
@@ -105,7 +123,16 @@ class PlaybackService : MediaSessionService() {
             .setMaximumOutputDimension(DEFAULT_ARTWORK_PX * 2)
             .build(),
         defaultArtwork = { defaultArtwork },
+        // No embedded cover: try a separate image file, with the same loader the app uses.
+        fallback = { metadata ->
+            metadata.extras?.getString(EXTRA_CONTENT_URI)?.let { uri ->
+                runBlocking { ArtworkLoader.get(this@PlaybackService).load(uri, ArtworkSize.Large) }
+            }
+        },
+        fallbackExecutor = artworkExecutor,
     )
+
+    private val artworkExecutor = MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor())
 
     /** Tapping the notification (or the lock screen media card) opens the app on the player. */
     private fun openPlayerIntent(): PendingIntent =

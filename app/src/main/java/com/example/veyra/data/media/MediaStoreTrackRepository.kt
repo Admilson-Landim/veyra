@@ -51,6 +51,9 @@ class MediaStoreTrackRepository(
 
     private fun queryTracks(): List<Track> {
         val hasRelativePath = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+        // Before Android 10 there is no RELATIVE_PATH: derive the folder from the file path.
+        @Suppress("DEPRECATION")
+        val dataColumn = MediaStore.Audio.Media.DATA
         val projection = buildList {
             add(MediaStore.Audio.Media._ID)
             add(MediaStore.Audio.Media.TITLE)
@@ -59,11 +62,12 @@ class MediaStoreTrackRepository(
             add(MediaStore.Audio.Media.ALBUM_ID)
             add(MediaStore.Audio.Media.DURATION)
             add(MediaStore.Audio.Media.DISPLAY_NAME)
-            if (hasRelativePath) add(MediaStore.Audio.Media.RELATIVE_PATH)
+            if (hasRelativePath) add(MediaStore.Audio.Media.RELATIVE_PATH) else add(dataColumn)
             add(MediaStore.Audio.Media.SIZE)
             add(MediaStore.Audio.Media.DATE_MODIFIED)
+            add(MediaStore.Audio.Media.DATE_ADDED)
         }.toTypedArray()
-        val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0 AND ${MediaStore.Audio.Media.DURATION} > 0"
+        val selection = buildSelection()
 
         val cursor = resolver.query(collection, projection, selection, null, null)
             ?: error("MediaStore query returned no cursor")
@@ -76,9 +80,12 @@ class MediaStoreTrackRepository(
             val albumIdCol = it.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
             val durationCol = it.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
             val displayNameCol = it.getColumnIndexOrThrow(MediaStore.Audio.Media.DISPLAY_NAME)
-            val relativePathCol = if (hasRelativePath) it.getColumnIndexOrThrow(MediaStore.Audio.Media.RELATIVE_PATH) else -1
+            val relativePathCol = it.getColumnIndexOrThrow(
+                if (hasRelativePath) MediaStore.Audio.Media.RELATIVE_PATH else dataColumn,
+            )
             val sizeCol = it.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE)
             val dateModifiedCol = it.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_MODIFIED)
+            val dateAddedCol = it.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED)
 
             buildList(it.count) {
                 while (it.moveToNext()) {
@@ -94,15 +101,36 @@ class MediaStoreTrackRepository(
                             albumId = it.getLong(albumIdCol),
                             durationMs = it.getLong(durationCol),
                             displayName = displayName,
-                            relativePath = if (relativePathCol >= 0) it.getString(relativePathCol) else null,
+                            relativePath = it.getString(relativePathCol)?.let { value ->
+                                if (hasRelativePath) value else relativeFolderFromPath(value)
+                            },
                             sizeBytes = it.getLong(sizeCol),
                             dateModifiedSeconds = it.getLong(dateModifiedCol),
+                            dateAddedSeconds = it.getLong(dateAddedCol),
                         ),
                     )
                 }
             }
         }
     }
+
+    /**
+     * Music only, and never ringtones, notification or alarm sounds, podcasts or (Android 12+)
+     * recordings, even when they are also flagged as music. Folder and duration filters are user
+     * preferences and are applied later, without re-querying.
+     */
+    private fun buildSelection(): String = buildList {
+        add("${MediaStore.Audio.Media.IS_MUSIC} != 0")
+        add("${MediaStore.Audio.Media.DURATION} > 0")
+        add("${MediaStore.Audio.Media.IS_RINGTONE} = 0")
+        add("${MediaStore.Audio.Media.IS_NOTIFICATION} = 0")
+        add("${MediaStore.Audio.Media.IS_ALARM} = 0")
+        // NULL on files indexed before the column existed: treat as "not a podcast".
+        add("IFNULL(${MediaStore.Audio.Media.IS_PODCAST}, 0) = 0")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            add("IFNULL(${MediaStore.Audio.Media.IS_RECORDING}, 0) = 0")
+        }
+    }.joinToString(" AND ")
 
     private companion object {
         const val CHANGE_DEBOUNCE_MS = 300L

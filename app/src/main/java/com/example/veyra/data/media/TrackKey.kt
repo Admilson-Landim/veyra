@@ -14,7 +14,7 @@ import kotlin.math.abs
  */
 data class TrackKey(
     val mediaStoreId: Long,
-    /** Folder relative to the storage root, e.g. "Music/Album/". Null before Android 10. */
+    /** Folder relative to the storage root, e.g. "Music/Album/". Null if it could not be determined. */
     val relativePath: String?,
     val displayName: String?,
     val sizeBytes: Long,
@@ -42,9 +42,9 @@ fun Track.toTrackKey(): TrackKey = TrackKey(
  * Anything else, including ambiguous matches, resolves to null ("unavailable"): playing the
  * wrong song is worse than skipping one.
  *
- * Limitations: a file both renamed and moved under a new id is lost; before Android 10 there is
- * no relative path, so step 2 cannot help; identical copies of a file in several folders can
- * only be told apart by their path.
+ * Limitations: a file both renamed and moved under a new id is lost; without a known folder
+ * step 2 cannot help; identical copies of a file in several folders can only be told apart by
+ * their path.
  *
  * Build one resolver per library snapshot: construction indexes the library once, after which
  * each lookup is constant time.
