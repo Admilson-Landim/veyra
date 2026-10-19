@@ -88,6 +88,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.session)
+    // Cuts a section of a track into a new file, for "set as ringtone" with an excerpt.
+    implementation(libs.androidx.media3.transformer)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.appcompat)

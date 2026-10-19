@@ -60,7 +60,7 @@ audio files themselves are never modified.
 | **Covers** | Embedded artwork; same-name image, folder cover (`cover`, `folder`, `front`…) or VidMate thumbnail; default Veyra cover otherwise. Also shown in the notification. |
 | **Playlists** | Create, rename (no duplicates), delete with confirmation, reorder, remove, play all or from a track. Tracks that disappear are marked *unavailable* and skipped. |
 | **Start / end** | Per-track custom range, "always play the whole track", or follow the global rule. Invalid ranges (e.g. a shorter replacement file) are ignored and flagged, never a crash. |
-| **Track options** | Add to playlist, adjust start/end, properties (format, bitrate, sample rate, size, path, date added…), set as ringtone / notification / alarm sound. |
+| **Track options** | Add to playlist, adjust start/end, properties (format, bitrate, sample rate, size, path, date added…), set as ringtone / notification / alarm sound — the whole song or only a chosen part (Android 10+), exported to a new file with Media3 Transformer. |
 | **Sound** | Skip silence; equalizer with the device's real bands and presets plus a custom preset; bass boost; system effects panel when available. |
 | **Settings** | Library, Playback, Sound, Appearance (system / dark / light), Language (system / English / Português), About. |
 | **Accessibility** | TalkBack labels and actions (including next/previous for the swipe gestures), touch targets ≥ 48 dp, large text up to 200%, contrast checked by tests. |
@@ -161,7 +161,7 @@ Key decisions:
 |---|---|
 | Language | Kotlin 2.2, Coroutines / Flow |
 | UI | Jetpack Compose, Material 3 |
-| Playback | AndroidX Media3 1.11 (ExoPlayer, Session) |
+| Playback | AndroidX Media3 1.11 (ExoPlayer, Session, Transformer) |
 | Storage | Room 2.8 (KSP), DataStore Preferences 1.2 |
 | Localisation | AppCompat per-app languages (English, Portuguese) |
 | Build | Gradle Kotlin DSL, version catalog, R8 |
@@ -177,8 +177,8 @@ Key decisions:
 - **Unit tests:** start/end validation and priority, `TrackKey` resolution, library sorting and
   filters, artwork fallbacks and letterbox trimming, equalizer settings, property formatting,
   ViewModels (library, playback queue requests), WCAG contrast of both themes.
-- **Instrumented tests:** playlist DAO, Room migrations 1 → 2 → 3 (`MigrationTestHelper`) and the
-  `Track → MediaItem` conversion.
+- **Instrumented tests:** playlist DAO, Room migrations 1 → 2 → 3 (`MigrationTestHelper`), the
+  `Track → MediaItem` conversion and the ringtone excerpt export.
 
 ## Project structure
 

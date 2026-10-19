@@ -117,9 +117,13 @@ Abertas com toque longo ou com o botão ⋮, na Biblioteca, nas Playlists e no l
 - **Propriedades:** título, artista, álbum, ano, género, número da faixa, duração, formato, taxa
   de bits, taxa de amostragem, tamanho, caminho e data de adição ("Desconhecido" quando falta um
   valor).
-- **Definir como toque:** toque de chamada, som de notificação ou som de alarme. Usa o ficheiro
-  completo (o recorte não se aplica). O Android exige a permissão especial "Modificar definições
-  do sistema"; a app explica isso e abre a página certa.
+- **Definir como toque:** toque de chamada, som de notificação ou som de alarme, com a música
+  completa ou **só uma parte** (Android 10+). A parte escolhe-se com o mesmo editor do recorte
+  (slider, ±1 s, pré-escuta) e começa no recorte da faixa ou nos primeiros 30 s. É criado um
+  ficheiro de som novo (`.m4a`) na pasta Ringtones, Notifications ou Alarms; a música original
+  não é alterada e o ficheiro novo não aparece na Biblioteca. O Android exige a permissão
+  especial "Modificar definições do sistema", pedida só ao confirmar; a app explica isso e abre
+  a página certa.
 
 ## 8. Som
 

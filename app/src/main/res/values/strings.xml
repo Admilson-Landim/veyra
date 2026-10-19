@@ -147,13 +147,19 @@
     <string name="ringtone_call">Ringtone</string>
     <string name="ringtone_notification">Notification sound</string>
     <string name="ringtone_alarm">Alarm sound</string>
-    <string name="ringtone_full_file_note">The whole file is used: the custom start and end don\'t apply.</string>
+    <string name="ringtone_full_file_note">You can use the whole song or only a part of it.</string>
     <string name="ringtone_permission_title">Allow changing system settings</string>
     <string name="ringtone_permission_message">To set a sound, Android requires you to allow Veyra to modify system settings. Open settings, turn the option on for Veyra, and come back to try again.</string>
     <string name="ringtone_open_settings">Open settings</string>
     <string name="ringtone_set_call">“%1$s” set as ringtone.</string>
     <string name="ringtone_set_notification">“%1$s” set as notification sound.</string>
     <string name="ringtone_set_alarm">“%1$s” set as alarm sound.</string>
+    <string name="ringtone_use_part">Only a part of the song</string>
+    <string name="ringtone_use_part_detail">Choose the section to use. A new sound file is created; the song itself is not changed.</string>
+    <string name="ringtone_part_unsupported">Needs Android 10 or newer.</string>
+    <string name="ringtone_use_whole">The whole song</string>
+    <string name="ringtone_set_action">Set</string>
+    <string name="ringtone_creating">Creating the sound…</string>
     <string name="ringtone_failed">Couldn\'t set the sound.</string>
 
     <string name="properties_title">Properties</string>

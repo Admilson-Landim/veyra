@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,9 +18,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -32,6 +34,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -40,14 +43,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.veyra.R
+import com.example.veyra.data.clips.ClipMode
 import com.example.veyra.data.clips.ResolvedClip
 import com.example.veyra.data.db.PlaylistSummary
 import com.example.veyra.data.media.Track
@@ -57,6 +64,12 @@ import com.example.veyra.ui.library.LibraryScreen
 import com.example.veyra.ui.library.LibraryUiState
 import com.example.veyra.ui.library.LibraryViewModel
 import com.example.veyra.ui.library.allTracksOrNull
+import com.example.veyra.ui.options.RingtoneSetter
+import com.example.veyra.ui.options.RingtoneSheet
+import com.example.veyra.ui.options.RingtoneTarget
+import com.example.veyra.ui.options.TrackOptionsActions
+import com.example.veyra.ui.options.TrackOptionsSheet
+import com.example.veyra.ui.options.TrackPropertiesSheet
 import com.example.veyra.ui.player.MiniPlayer
 import com.example.veyra.ui.player.PlayerActions
 import com.example.veyra.ui.player.PlayerScreen
@@ -71,14 +84,8 @@ import com.example.veyra.ui.playlists.PlaylistNameDialog
 import com.example.veyra.ui.playlists.PlaylistsScreen
 import com.example.veyra.ui.playlists.PlaylistsViewModel
 import com.example.veyra.ui.settings.SettingsScreen
-import com.example.veyra.ui.theme.components.VeyraHeader
-import androidx.compose.ui.platform.LocalContext
-import com.example.veyra.ui.options.RingtoneSetter
-import com.example.veyra.ui.options.RingtoneTarget
-import com.example.veyra.ui.options.TrackOptionsActions
-import com.example.veyra.ui.options.TrackOptionsSheet
-import com.example.veyra.ui.options.TrackPropertiesSheet
 import com.example.veyra.ui.settings.SettingsViewModel
+import com.example.veyra.ui.theme.components.VeyraHeader
 import kotlinx.coroutines.launch
 
 // Width from which a navigation rail replaces the bottom bar (Material "medium" window class).
@@ -106,6 +113,8 @@ fun VeyraApp(
     var optionsTrack by remember { mutableStateOf<Track?>(null) }
     var propertiesTrack by remember { mutableStateOf<Track?>(null) }
     var ringtonePermissionNeeded by rememberSaveable { mutableStateOf(false) }
+    var ringtoneRequest by remember { mutableStateOf<Pair<Track, RingtoneTarget>?>(null) }
+    var ringtoneInProgress by remember { mutableStateOf(false) }
     val settingsViewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.factory(libraryViewModel.uiState))
     val context = LocalContext.current
     var nameRequest by remember { mutableStateOf<NameRequest?>(null) }
@@ -282,32 +291,71 @@ fun VeyraApp(
                 onAddToPlaylist = { addToPlaylistTrack = it },
                 onAdjustClip = { adjustClipTrack = it },
                 onProperties = { propertiesTrack = it },
-                onSetRingtone = { t, target ->
-                    if (!RingtoneSetter.canWrite(context)) {
-                        // Explain first; the system page only offers an on/off switch.
-                        ringtonePermissionNeeded = true
-                    } else {
-                        scope.launch {
-                            val ok = RingtoneSetter.set(context, t, target)
-                            val name = t.title ?: t.displayName.orEmpty()
-                            showMessage(
-                                if (!ok) resources.getString(R.string.ringtone_failed) else resources.getString(
-                                    when (target) {
-                                        RingtoneTarget.Call -> R.string.ringtone_set_call
-                                        RingtoneTarget.Notification -> R.string.ringtone_set_notification
-                                        RingtoneTarget.Alarm -> R.string.ringtone_set_alarm
-                                    },
-                                    name,
-                                ),
-                            )
-                        }
-                    }
-                },
+                // Whole song or only a part: chosen in the ringtone sheet; the permission is
+                // checked when the user confirms.
+                onSetRingtone = { t, target -> ringtoneRequest = t to target },
             ),
             onDismiss = { optionsTrack = null },
         )
     }
     propertiesTrack?.let { track -> TrackPropertiesSheet(track, onDismiss = { propertiesTrack = null }) }
+
+    ringtoneRequest?.let { (track, target) ->
+        RingtoneSheet(
+            track = track,
+            target = target,
+            suggested = clips[track.id]?.takeIf { it.isValid && it.mode == ClipMode.Custom }?.clip,
+            mainPlayerPositionMs = {
+                if (playerState.currentMediaId == track.id.toString()) playerViewModel.absolutePositionMs() else null
+            },
+            onConfirm = { excerpt ->
+                if (!RingtoneSetter.canWrite(context)) {
+                    // Explain first; the system page only offers an on/off switch. The sheet stays
+                    // open with the chosen section, so the user can confirm again on return.
+                    ringtonePermissionNeeded = true
+                    return@RingtoneSheet
+                }
+                ringtoneRequest = null
+                ringtoneInProgress = true
+                scope.launch {
+                    val ok = try {
+                        RingtoneSetter.set(context, track, target, excerpt)
+                    } finally {
+                        ringtoneInProgress = false
+                    }
+                    val name = track.title ?: track.displayName.orEmpty()
+                    showMessage(
+                        if (!ok) resources.getString(R.string.ringtone_failed) else resources.getString(
+                            when (target) {
+                                RingtoneTarget.Call -> R.string.ringtone_set_call
+                                RingtoneTarget.Notification -> R.string.ringtone_set_notification
+                                RingtoneTarget.Alarm -> R.string.ringtone_set_alarm
+                            },
+                            name,
+                        ),
+                    )
+                }
+            },
+            onDismiss = { ringtoneRequest = null },
+        )
+    }
+
+    // Creating an excerpt takes a few seconds: block other actions until it is done.
+    if (ringtoneInProgress) {
+        AlertDialog(
+            onDismissRequest = {},
+            confirmButton = {},
+            text = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.width(20.dp))
+                    Text(stringResource(R.string.ringtone_creating))
+                }
+            },
+            properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        )
+    }
 
     if (ringtonePermissionNeeded) {
         AlertDialog(

@@ -97,32 +97,10 @@ fun AdjustClipSheet(
         )
     }
     val duration = track.durationMs
-    val context = LocalContext.current
-    val preview = remember { ClipPreviewPlayer(context) }
-    DisposableEffect(preview) { onDispose { preview.release() } }
-
     val initial = stored?.takeIf { it.isValid && it.mode == ClipMode.Custom }?.clip
     var startMs by rememberSaveable(track.id) { mutableLongStateOf(initial?.startMs ?: 0L) }
     var endMs by rememberSaveable(track.id) { mutableLongStateOf(initial?.endMs ?: duration) }
-    var usedPreview by remember { mutableStateOf(false) }
     val validation = validateClip(startMs, endMs, duration)
-
-    // Where "set start/end here" points: the excerpt being previewed, else the main player if it
-    // is playing this track, else where the last excerpt stopped.
-    fun positionNow(): Long? = when {
-        preview.isPlaying -> preview.absolutePositionMs()
-        mainPlayerPositionMs() != null -> mainPlayerPositionMs()
-        usedPreview -> preview.absolutePositionMs()
-        else -> null
-    }?.coerceIn(0L, duration)
-
-    var position by remember { mutableStateOf(positionNow()) }
-    LaunchedEffect(Unit) {
-        while (true) {
-            position = positionNow()
-            delay(250)
-        }
-    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -184,107 +162,14 @@ fun AdjustClipSheet(
 
             if (mode == SheetMode.Custom) {
                 Spacer(Modifier.height(16.dp))
-                val rangeLabel = stringResource(R.string.clip_range_label)
-                RangeSlider(
-                    value = startMs.toFloat()..endMs.toFloat(),
-                    onValueChange = { range ->
-                        // 100 ms resolution: finer than anyone can place by finger, coarse enough to read.
-                        startMs = (range.start / 100).roundToLong() * 100
-                        endMs = ((range.endInclusive / 100).roundToLong() * 100).coerceAtMost(duration)
-                    },
-                    valueRange = 0f..duration.toFloat().coerceAtLeast(1f),
-                    enabled = duration > 0,
-                    colors = SliderDefaults.colors(
-                        thumbColor = MaterialTheme.colorScheme.primary,
-                        activeTrackColor = MaterialTheme.colorScheme.primary,
-                        inactiveTrackColor = MaterialTheme.colorScheme.outlineVariant,
-                    ),
-                    modifier = Modifier.semantics { contentDescription = rangeLabel },
+                ClipRangeEditor(
+                    track = track,
+                    startMs = startMs,
+                    endMs = endMs,
+                    onStartChange = { startMs = it },
+                    onEndChange = { endMs = it },
+                    mainPlayerPositionMs = mainPlayerPositionMs,
                 )
-                Text(
-                    text = stringResource(R.string.clip_length, formatClipTime((endMs - startMs).coerceAtLeast(0))),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-
-                Spacer(Modifier.height(16.dp))
-                BoundRow(
-                    label = stringResource(R.string.clip_start),
-                    valueMs = startMs,
-                    minusDescription = stringResource(R.string.clip_start_minus),
-                    plusDescription = stringResource(R.string.clip_start_plus),
-                    onMinus = { startMs = (startMs - STEP_MS).coerceAtLeast(0) },
-                    onPlus = { startMs = (startMs + STEP_MS).coerceAtMost(duration) },
-                )
-                BoundRow(
-                    label = stringResource(R.string.clip_end),
-                    valueMs = endMs,
-                    minusDescription = stringResource(R.string.clip_end_minus),
-                    plusDescription = stringResource(R.string.clip_end_plus),
-                    onMinus = { endMs = (endMs - STEP_MS).coerceAtLeast(0) },
-                    onPlus = { endMs = (endMs + STEP_MS).coerceAtMost(duration) },
-                )
-
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    text = position?.let { stringResource(R.string.clip_position, formatClipTime(it)) }
-                        ?: stringResource(R.string.clip_position_unavailable),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                // Same height for both, even when one label wraps to two lines.
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(IntrinsicSize.Min),
-                ) {
-                    OutlinedButton(
-                        onClick = { positionNow()?.let { startMs = it } },
-                        enabled = position != null,
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight(),
-                    ) { Text(stringResource(R.string.clip_set_start_here), textAlign = TextAlign.Center) }
-                    OutlinedButton(
-                        onClick = { positionNow()?.let { endMs = it } },
-                        enabled = position != null,
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight(),
-                    ) { Text(stringResource(R.string.clip_set_end_here), textAlign = TextAlign.Center) }
-                }
-
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    if (preview.isPlaying) {
-                        OutlinedButton(onClick = preview::stop, modifier = Modifier.weight(1f)) {
-                            Text(stringResource(R.string.clip_preview_stop))
-                        }
-                    } else {
-                        OutlinedButton(
-                            onClick = {
-                                usedPreview = true
-                                preview.play(track.contentUri, startMs, minOf(startMs + PREVIEW_MS, endMs))
-                            },
-                            enabled = validation == ClipValidation.Valid,
-                            modifier = Modifier.weight(1f),
-                        ) { Text(stringResource(R.string.clip_preview_start)) }
-                        OutlinedButton(
-                            onClick = {
-                                usedPreview = true
-                                preview.play(track.contentUri, maxOf(endMs - PREVIEW_MS, startMs), endMs)
-                            },
-                            enabled = validation == ClipValidation.Valid,
-                            modifier = Modifier.weight(1f),
-                        ) { Text(stringResource(R.string.clip_preview_end)) }
-                    }
-                }
-
-                validationMessage(validation)?.let { message ->
-                    Spacer(Modifier.height(8.dp))
-                    Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
-                }
-
             }
 
             Spacer(Modifier.height(16.dp))
@@ -302,6 +187,152 @@ fun AdjustClipSheet(
                     enabled = mode != SheetMode.Custom || validation == ClipValidation.Valid,
                 ) { Text(stringResource(R.string.clip_save)) }
             }
+        }
+    }
+}
+
+/**
+ * Range editor for a section of [track] (positions in the file): range slider, ±1 s fine tuning,
+ * "set start/end here" and short previews of the start and the end. Shared by "Adjust start and
+ * end" and by "Set as ringtone".
+ *
+ * @param mainPlayerPositionMs position in the file of the main player, or null when [track]
+ *   is not the one playing.
+ */
+@Composable
+fun ClipRangeEditor(
+    track: Track,
+    startMs: Long,
+    endMs: Long,
+    onStartChange: (Long) -> Unit,
+    onEndChange: (Long) -> Unit,
+    mainPlayerPositionMs: () -> Long?,
+) {
+    val duration = track.durationMs
+    val context = LocalContext.current
+    val preview = remember { ClipPreviewPlayer(context) }
+    DisposableEffect(preview) { onDispose { preview.release() } }
+
+    var usedPreview by remember { mutableStateOf(false) }
+    val validation = validateClip(startMs, endMs, duration)
+
+    // Where "set start/end here" points: the excerpt being previewed, else the main player if it
+    // is playing this track, else where the last excerpt stopped.
+    fun positionNow(): Long? = when {
+        preview.isPlaying -> preview.absolutePositionMs()
+        mainPlayerPositionMs() != null -> mainPlayerPositionMs()
+        usedPreview -> preview.absolutePositionMs()
+        else -> null
+    }?.coerceIn(0L, duration)
+
+    var position by remember { mutableStateOf(positionNow()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            position = positionNow()
+            delay(250)
+        }
+    }
+
+    Column {
+        val rangeLabel = stringResource(R.string.clip_range_label)
+        RangeSlider(
+            value = startMs.toFloat()..endMs.toFloat(),
+            onValueChange = { range ->
+                // 100 ms resolution: finer than anyone can place by finger, coarse enough to read.
+                onStartChange((range.start / 100).roundToLong() * 100)
+                onEndChange(((range.endInclusive / 100).roundToLong() * 100).coerceAtMost(duration))
+            },
+            valueRange = 0f..duration.toFloat().coerceAtLeast(1f),
+            enabled = duration > 0,
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.primary,
+                activeTrackColor = MaterialTheme.colorScheme.primary,
+                inactiveTrackColor = MaterialTheme.colorScheme.outlineVariant,
+            ),
+            modifier = Modifier.semantics { contentDescription = rangeLabel },
+        )
+        Text(
+            text = stringResource(R.string.clip_length, formatClipTime((endMs - startMs).coerceAtLeast(0))),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Spacer(Modifier.height(16.dp))
+        BoundRow(
+            label = stringResource(R.string.clip_start),
+            valueMs = startMs,
+            minusDescription = stringResource(R.string.clip_start_minus),
+            plusDescription = stringResource(R.string.clip_start_plus),
+            onMinus = { onStartChange((startMs - STEP_MS).coerceAtLeast(0)) },
+            onPlus = { onStartChange((startMs + STEP_MS).coerceAtMost(duration)) },
+        )
+        BoundRow(
+            label = stringResource(R.string.clip_end),
+            valueMs = endMs,
+            minusDescription = stringResource(R.string.clip_end_minus),
+            plusDescription = stringResource(R.string.clip_end_plus),
+            onMinus = { onEndChange((endMs - STEP_MS).coerceAtLeast(0)) },
+            onPlus = { onEndChange((endMs + STEP_MS).coerceAtMost(duration)) },
+        )
+
+        Spacer(Modifier.height(12.dp))
+        Text(
+            text = position?.let { stringResource(R.string.clip_position, formatClipTime(it)) }
+                ?: stringResource(R.string.clip_position_unavailable),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        // Same height for both, even when one label wraps to two lines.
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min),
+        ) {
+            OutlinedButton(
+                onClick = { positionNow()?.let(onStartChange) },
+                enabled = position != null,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+            ) { Text(stringResource(R.string.clip_set_start_here), textAlign = TextAlign.Center) }
+            OutlinedButton(
+                onClick = { positionNow()?.let(onEndChange) },
+                enabled = position != null,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+            ) { Text(stringResource(R.string.clip_set_end_here), textAlign = TextAlign.Center) }
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            if (preview.isPlaying) {
+                OutlinedButton(onClick = preview::stop, modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.clip_preview_stop))
+                }
+            } else {
+                OutlinedButton(
+                    onClick = {
+                        usedPreview = true
+                        preview.play(track.contentUri, startMs, minOf(startMs + PREVIEW_MS, endMs))
+                    },
+                    enabled = validation == ClipValidation.Valid,
+                    modifier = Modifier.weight(1f),
+                ) { Text(stringResource(R.string.clip_preview_start)) }
+                OutlinedButton(
+                    onClick = {
+                        usedPreview = true
+                        preview.play(track.contentUri, maxOf(endMs - PREVIEW_MS, startMs), endMs)
+                    },
+                    enabled = validation == ClipValidation.Valid,
+                    modifier = Modifier.weight(1f),
+                ) { Text(stringResource(R.string.clip_preview_end)) }
+            }
+        }
+
+        validationMessage(validation)?.let { message ->
+            Spacer(Modifier.height(8.dp))
+            Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
         }
     }
 }

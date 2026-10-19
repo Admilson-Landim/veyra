@@ -140,13 +140,19 @@
     <string name="ringtone_call">Toque de chamada</string>
     <string name="ringtone_notification">Som de notificação</string>
     <string name="ringtone_alarm">Som de alarme</string>
-    <string name="ringtone_full_file_note">O toque usa o ficheiro completo: o recorte de início e fim não se aplica.</string>
+    <string name="ringtone_full_file_note">Podes usar a música completa ou só uma parte.</string>
     <string name="ringtone_permission_title">Permitir alterar as definições do sistema</string>
     <string name="ringtone_permission_message">Para definir um toque, o Android exige que autorizes o Veyra a modificar as definições do sistema. Abre as definições, ativa a opção para o Veyra e volta para tentar de novo.</string>
     <string name="ringtone_open_settings">Abrir definições</string>
     <string name="ringtone_set_call">\u201c%1$s\u201d definida como toque de chamada.</string>
     <string name="ringtone_set_notification">\u201c%1$s\u201d definida como som de notificação.</string>
     <string name="ringtone_set_alarm">\u201c%1$s\u201d definida como som de alarme.</string>
+    <string name="ringtone_use_part">Só uma parte da música</string>
+    <string name="ringtone_use_part_detail">Escolhe o excerto a usar. É criado um ficheiro de som novo; a música não é alterada.</string>
+    <string name="ringtone_part_unsupported">Requer Android 10 ou superior.</string>
+    <string name="ringtone_use_whole">A música completa</string>
+    <string name="ringtone_set_action">Definir</string>
+    <string name="ringtone_creating">A criar o som…</string>
     <string name="ringtone_failed">Não foi possível definir o toque.</string>
 
     <string name="properties_title">Propriedades</string>
