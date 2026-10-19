@@ -8,13 +8,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.veyra"
+    namespace = "io.github.admilsonlandim.veyra"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.example.veyra"
+        applicationId = "io.github.admilsonlandim.veyra"
         minSdk = 24
         targetSdk = 37
         versionCode = 1

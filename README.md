@@ -36,6 +36,7 @@ audio files themselves are never modified.
 - [Testing](#testing)
 - [Project structure](#project-structure)
 - [Roadmap](#roadmap)
+- [License](#license)
 - [Resumo em português](#resumo-em-português)
 
 ## Highlights
@@ -183,7 +184,7 @@ Key decisions:
 ## Project structure
 
 ```
-app/src/main/java/com/example/veyra/
+app/src/main/java/io/github/admilsonlandim/veyra/
 ├── data/
 │   ├── audio/       equalizer settings and device capabilities
 │   ├── clips/       start/end model, validation and priority rules
@@ -204,14 +205,20 @@ app/src/main/java/com/example/veyra/
 
 ## Roadmap
 
-Ideas for future versions (not implemented):
+Planned for version 1.1 (not implemented yet):
 
 - Restore the queue and position after the app is closed.
-- Search in the library; album, artist and folder views.
-- Fix badly encoded ID3 tags.
-- Drag-and-drop reordering in playlists.
+- Search in the library and a folder view.
+- Delete a track from the device (with confirmation).
+- Handle badly encoded ID3 tags.
 - Sleep timer.
-- Import / export playlists (M3U).
+
+## License
+
+Copyright © 2026 Admilson Landim. All rights reserved.
+
+This is proprietary software: the source code is not licensed for copying, modification or
+redistribution. See [LICENSE](LICENSE).
 
 ---
 
@@ -237,3 +244,5 @@ minificada, assinada com a keystore indicada em `keystore.properties`, que nunca
 repositório).
 
 A descrição detalhada de cada funcionalidade está em [Funcionalidade.md](Funcionalidade.md).
+
+**Licença:** software proprietário, todos os direitos reservados (ver [LICENSE](LICENSE)).

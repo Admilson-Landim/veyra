@@ -175,4 +175,3 @@ Todas as definições ficam guardadas entre sessões.
 - Em MP3 VBR, o início de um recorte pode desviar 1–2 segundos.
 - No EMUI em modo escuro, a barra de estado fica escura mesmo no tema claro (comportamento do
   sistema).
-- O identificador da app (`com.example.veyra`) tem de ser mudado antes de publicar na Play Store.
