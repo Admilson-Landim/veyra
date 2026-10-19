@@ -31,6 +31,23 @@
     <string name="library_error_title">Não foi possível ler a biblioteca</string>
     <string name="library_error_message">Ocorreu um erro ao consultar as músicas do dispositivo.</string>
     <string name="library_retry_action">Tentar novamente</string>
+    <string name="track_play_action">Reproduzir</string>
+    <string name="track_now_playing">A tocar</string>
+
+    <string name="player_open_action">Abrir leitor</string>
+    <string name="player_close">Fechar leitor</string>
+    <string name="player_play">Reproduzir</string>
+    <string name="player_pause">Pausa</string>
+    <string name="player_next">Faixa seguinte</string>
+    <string name="player_previous">Faixa anterior</string>
+    <string name="player_seek">Posição na faixa</string>
+    <string name="player_shuffle_on">Aleatório: ligado</string>
+    <string name="player_shuffle_off">Aleatório: desligado</string>
+    <string name="player_repeat_off">Repetição: desligada</string>
+    <string name="player_repeat_all">Repetição: todas</string>
+    <string name="player_repeat_one">Repetição: uma</string>
+    <string name="player_error_named">Não foi possível reproduzir \u201c%1$s\u201d.</string>
+    <string name="player_error">Não foi possível reproduzir esta faixa.</string>
 
     <string name="playlists_title">Playlists</string>
     <string name="playlists_empty_title">Playlists em breve</string>
