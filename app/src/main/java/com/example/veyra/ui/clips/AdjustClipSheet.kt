@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -376,7 +377,7 @@ private fun validationMessage(validation: ClipValidation): String? = when (valid
     ClipValidation.Valid -> null
     ClipValidation.NegativeStart -> stringResource(R.string.clip_error_negative)
     ClipValidation.StartNotBeforeEnd -> stringResource(R.string.clip_error_order)
-    ClipValidation.TooShort -> stringResource(R.string.clip_error_too_short, (MIN_CLIP_LENGTH_MS / 1000).toInt())
+    ClipValidation.TooShort -> (MIN_CLIP_LENGTH_MS / 1000).toInt().let { pluralStringResource(R.plurals.clip_error_too_short, it, it) }
     ClipValidation.EndBeyondDuration -> stringResource(R.string.clip_error_beyond)
     ClipValidation.UnknownDuration -> stringResource(R.string.clip_error_unknown_duration)
 }

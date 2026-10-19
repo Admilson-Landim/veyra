@@ -1,0 +1,239 @@
+<resources>
+    <string name="nav_library">Biblioteca</string>
+    <string name="nav_playlists">Playlists</string>
+    <string name="nav_settings">Definições</string>
+
+    <string name="library_title">Biblioteca</string>
+    <string name="library_loading">A carregar a biblioteca</string>
+    <plurals name="library_track_count">
+        <item quantity="one">%d faixa</item>
+        <item quantity="many">%d de faixas</item>
+        <item quantity="other">%d faixas</item>
+    </plurals>
+    <string name="track_unknown_title">Sem título</string>
+    <string name="track_unknown_artist">Artista desconhecido</string>
+
+    <string name="library_permission_title">Dá acesso à tua música</string>
+    <string name="library_permission_message">O Veyra mostra os ficheiros de áudio guardados neste dispositivo. Nada sai do teu telemóvel.</string>
+    <string name="library_permission_denied_title">Acesso à música recusado</string>
+    <string name="library_permission_denied_message">Sem esta permissão, o Veyra não consegue mostrar as tuas músicas.</string>
+    <string name="library_permission_blocked_title">Acesso à música desativado</string>
+    <string name="library_permission_blocked_message">Para ver as tuas músicas, ativa a permissão de acesso a música e áudio nas definições da app.</string>
+    <string name="library_permission_action">Permitir acesso à música</string>
+    <string name="library_open_settings_action">Abrir definições</string>
+
+    <string name="library_empty_title">Nenhuma música encontrada</string>
+    <string name="library_empty_message">Copia ficheiros de áudio para o dispositivo, por exemplo para a pasta Music, e eles aparecem aqui automaticamente.</string>
+
+    <string name="library_error_title">Não foi possível ler a biblioteca</string>
+    <string name="library_error_message">Ocorreu um erro ao consultar as músicas do dispositivo.</string>
+    <string name="library_retry_action">Tentar novamente</string>
+    <string name="track_play_action">Reproduzir</string>
+    <string name="track_now_playing">A tocar</string>
+
+    <string name="player_open_action">Abrir leitor</string>
+    <string name="player_close">Fechar leitor</string>
+    <string name="player_play">Reproduzir</string>
+    <string name="player_pause">Pausa</string>
+    <string name="player_next">Faixa seguinte</string>
+    <string name="player_previous">Faixa anterior</string>
+    <string name="player_seek">Posição na faixa</string>
+    <string name="player_shuffle_on">Aleatório: ligado</string>
+    <string name="player_shuffle_off">Aleatório: desligado</string>
+    <string name="player_repeat_off">Repetição: desligada</string>
+    <string name="player_repeat_all">Repetição: todas</string>
+    <string name="player_repeat_one">Repetição: uma</string>
+    <string name="player_error_named">Não foi possível reproduzir \u201c%1$s\u201d.</string>
+    <string name="player_error">Não foi possível reproduzir esta faixa.</string>
+
+    <string name="track_options">Opções da faixa</string>
+
+    <string name="playlists_title">Playlists</string>
+    <string name="playlists_empty_title">Ainda não há playlists</string>
+    <string name="playlists_empty_message">Cria uma playlist e adiciona faixas a partir da Biblioteca ou do leitor.</string>
+    <string name="playlist_new">Nova playlist</string>
+    <string name="playlist_open_action">Abrir playlist</string>
+    <string name="playlist_back">Voltar às playlists</string>
+    <string name="playlist_play_all">Tocar tudo</string>
+    <string name="playlist_rename">Renomear</string>
+    <string name="playlist_delete">Apagar</string>
+    <string name="playlist_rename_title">Renomear playlist</string>
+    <string name="playlist_name_label">Nome</string>
+    <string name="playlist_create_action">Criar</string>
+    <string name="playlist_save_action">Guardar</string>
+    <string name="playlist_cancel_action">Cancelar</string>
+    <string name="playlist_name_empty">Escreve um nome.</string>
+    <plurals name="playlist_name_too_long">
+        <item quantity="one">Máximo de %1$d caráter.</item>
+        <item quantity="many">Máximo de %1$d caracteres.</item>
+        <item quantity="other">Máximo de %1$d caracteres.</item>
+    </plurals>
+    <string name="playlist_name_duplicate">Já existe uma playlist com este nome.</string>
+    <string name="playlist_delete_title">Apagar \u201c%1$s\u201d?</string>
+    <string name="playlist_delete_message">A playlist é apagada. As músicas continuam no dispositivo.</string>
+    <string name="playlist_empty_title">Playlist vazia</string>
+    <string name="playlist_empty_message">Adiciona faixas com o botão de opções na Biblioteca ou no leitor.</string>
+    <string name="playlist_entry_options">Opções da entrada</string>
+    <string name="playlist_move_up">Mover para cima</string>
+    <string name="playlist_move_down">Mover para baixo</string>
+    <string name="playlist_remove">Remover da playlist</string>
+    <string name="playlist_track_unavailable">Indisponível</string>
+    <string name="playlist_library_unavailable">Sem acesso à música do dispositivo. Dá acesso na Biblioteca para tocar esta playlist.</string>
+    <string name="clip_adjust">Ajustar início e fim</string>
+    <string name="clip_active">Recorte ativo</string>
+    <string name="clip_invalid">Recorte inválido</string>
+    <string name="clip_player_range">Recorte %1$s–%2$s</string>
+    <string name="clip_player_invalid">Recorte inválido: a tocar a faixa inteira</string>
+    <string name="clip_range_label">Intervalo a tocar</string>
+    <string name="clip_start">Início</string>
+    <string name="clip_end">Fim</string>
+    <string name="clip_length">Duração do recorte: %1$s</string>
+    <string name="clip_minus_second">−1 s</string>
+    <string name="clip_plus_second">+1 s</string>
+    <string name="clip_start_minus">Recuar o início 1 segundo</string>
+    <string name="clip_start_plus">Avançar o início 1 segundo</string>
+    <string name="clip_end_minus">Recuar o fim 1 segundo</string>
+    <string name="clip_end_plus">Avançar o fim 1 segundo</string>
+    <string name="clip_set_start_here">Definir início aqui</string>
+    <string name="clip_set_end_here">Definir fim aqui</string>
+    <string name="clip_position">Posição atual: %1$s</string>
+    <string name="clip_position_unavailable">Toca a faixa ou ouve um excerto para usar a posição atual.</string>
+    <string name="clip_preview_start">Ouvir início</string>
+    <string name="clip_preview_end">Ouvir fim</string>
+    <string name="clip_preview_stop">Parar</string>
+    <string name="clip_save">Guardar</string>
+    <string name="clip_cancel">Cancelar</string>
+    <string name="clip_error_negative">O início não pode ser negativo.</string>
+    <string name="clip_error_order">O início tem de ser antes do fim.</string>
+    <plurals name="clip_error_too_short">
+        <item quantity="one">O recorte tem de durar pelo menos %1$d segundo.</item>
+        <item quantity="many">O recorte tem de durar pelo menos %1$d segundos.</item>
+        <item quantity="other">O recorte tem de durar pelo menos %1$d segundos.</item>
+    </plurals>
+    <string name="clip_error_beyond">O fim não pode passar da duração da faixa.</string>
+    <string name="clip_error_unknown_duration">A duração desta faixa é desconhecida.</string>
+    <string name="clip_stored_invalid">O recorte guardado (%1$s–%2$s) já não cabe neste ficheiro e está a ser ignorado. Ajusta e guarda, ou repõe o padrão.</string>
+    <string name="clip_mode_global">Usar a regra global (padrão)</string>
+    <string name="clip_mode_global_off">A regra global está desligada: toca a faixa completa.</string>
+    <string name="clip_mode_global_too_short">Faixa curta demais para a regra global: toca completa.</string>
+    <string name="clip_mode_global_range">Toca de %1$s a %2$s.</string>
+    <string name="clip_mode_custom">Recorte personalizado</string>
+    <string name="clip_mode_full">Tocar sempre a faixa completa</string>
+    <string name="clip_mode_full_detail">Ignora a regra global para esta faixa.</string>
+    <string name="player_rule_global">Regra global %1$s–%2$s</string>
+    <string name="player_rule_full">Faixa completa (sem regra global)</string>
+    <string name="clip_saved">Recorte guardado.</string>
+    <string name="clip_reset_done">Recorte removido.</string>
+
+    <string name="library_play_all">Tocar tudo</string>
+    <string name="library_shuffle">Aleatório</string>
+    <string name="library_sort_current">Ordenar por: %1$s</string>
+    <string name="sort_title">Título</string>
+    <string name="sort_artist">Artista</string>
+    <string name="sort_album">Álbum</string>
+    <string name="sort_date_added">Adicionadas recentemente</string>
+    <string name="sort_duration">Duração</string>
+
+    <string name="options_add_to_playlist">Adicionar a uma playlist</string>
+    <string name="options_properties">Propriedades</string>
+    <string name="options_set_ringtone">Definir como toque</string>
+    <string name="ringtone_call">Toque de chamada</string>
+    <string name="ringtone_notification">Som de notificação</string>
+    <string name="ringtone_alarm">Som de alarme</string>
+    <string name="ringtone_full_file_note">O toque usa o ficheiro completo: o recorte de início e fim não se aplica.</string>
+    <string name="ringtone_permission_title">Permitir alterar as definições do sistema</string>
+    <string name="ringtone_permission_message">Para definir um toque, o Android exige que autorizes o Veyra a modificar as definições do sistema. Abre as definições, ativa a opção para o Veyra e volta para tentar de novo.</string>
+    <string name="ringtone_open_settings">Abrir definições</string>
+    <string name="ringtone_set_call">\u201c%1$s\u201d definida como toque de chamada.</string>
+    <string name="ringtone_set_notification">\u201c%1$s\u201d definida como som de notificação.</string>
+    <string name="ringtone_set_alarm">\u201c%1$s\u201d definida como som de alarme.</string>
+    <string name="ringtone_failed">Não foi possível definir o toque.</string>
+
+    <string name="properties_title">Propriedades</string>
+    <string name="properties_unknown">Desconhecido</string>
+    <string name="properties_loading">A ler o ficheiro…</string>
+    <string name="prop_title">Título</string>
+    <string name="prop_artist">Artista</string>
+    <string name="prop_album">Álbum</string>
+    <string name="prop_year">Ano</string>
+    <string name="prop_genre">Género</string>
+    <string name="prop_track_number">N.º da faixa</string>
+    <string name="prop_duration">Duração</string>
+    <string name="prop_format">Formato</string>
+    <string name="prop_bitrate">Taxa de bits</string>
+    <string name="prop_sample_rate">Taxa de amostragem</string>
+    <string name="prop_size">Tamanho</string>
+    <string name="prop_path">Caminho</string>
+    <string name="prop_date_added">Adicionada em</string>
+
+    <string name="add_to_playlist_title">Adicionar a playlist</string>
+    <string name="added_to_playlist">Adicionada a \u201c%1$s\u201d.</string>
+
+    <string name="settings_title">Definições</string>
+    <string name="settings_section_library">Biblioteca</string>
+    <string name="settings_excluded_folders">Pastas excluídas</string>
+    <string name="settings_excluded_folders_hint">As faixas destas pastas não aparecem na Biblioteca. Por defeito, as pastas habituais de gravações e notas de voz.</string>
+    <string name="settings_no_excluded_folders">Nenhuma pasta excluída.</string>
+    <string name="settings_remove_folder">Deixar de excluir %1$s</string>
+    <string name="settings_add_folder">Excluir uma pasta</string>
+    <string name="settings_add_folder_title">Excluir pasta</string>
+    <string name="settings_add_folder_empty">Não há outras pastas com música.</string>
+    <string name="settings_reset_folders">Repor pastas padrão</string>
+    <string name="settings_device_images">Procurar capas em imagens do dispositivo</string>
+    <string name="settings_device_images_detail">Quando a faixa não tem capa própria, usar uma imagem com o mesmo nome, a capa da pasta ou a miniatura do VidMate.</string>
+    <string name="settings_skip_short">Ignorar faixas curtas</string>
+    <plurals name="settings_skip_short_detail">
+        <item quantity="one">Esconder faixas com menos de %1$d segundo</item>
+        <item quantity="many">Esconder faixas com menos de %1$d segundos</item>
+        <item quantity="other">Esconder faixas com menos de %1$d segundos</item>
+    </plurals>
+    <string name="settings_min_duration_minus">Menos 5 segundos</string>
+    <string name="settings_min_duration_plus">Mais 5 segundos</string>
+    <string name="settings_close">Fechar</string>
+
+    <string name="settings_section_playback">Reprodução</string>
+    <string name="settings_skip_start">Saltar o início de cada faixa</string>
+    <plurals name="settings_skip_start_detail">
+        <item quantity="one">Começar %1$d segundo depois do início.</item>
+        <item quantity="many">Começar %1$d segundos depois do início.</item>
+        <item quantity="other">Começar %1$d segundos depois do início.</item>
+    </plurals>
+    <string name="settings_skip_end">Avançar antes do fim</string>
+    <plurals name="settings_skip_end_detail">
+        <item quantity="one">Passar à faixa seguinte %1$d segundo antes do fim.</item>
+        <item quantity="many">Passar à faixa seguinte %1$d segundos antes do fim.</item>
+        <item quantity="other">Passar à faixa seguinte %1$d segundos antes do fim.</item>
+    </plurals>
+    <plurals name="settings_global_note">
+        <item quantity="one">Aplica-se a faixas sem recorte próprio, quando resta pelo menos %1$d segundo. Nunca altera os ficheiros.</item>
+        <item quantity="many">Aplica-se a faixas sem recorte próprio, quando restam pelo menos %1$d segundos. Nunca altera os ficheiros.</item>
+        <item quantity="other">Aplica-se a faixas sem recorte próprio, quando restam pelo menos %1$d segundos. Nunca altera os ficheiros.</item>
+    </plurals>
+    <string name="settings_seconds_minus">Menos 5 segundos</string>
+    <string name="settings_seconds_plus">Mais 5 segundos</string>
+    <string name="settings_skip_silence">Saltar silêncio</string>
+    <string name="settings_skip_silence_detail">Acelera as partes silenciosas das faixas.</string>
+
+    <string name="settings_section_sound">Som</string>
+    <string name="eq_title">Equalizador</string>
+    <string name="eq_unsupported">Este dispositivo não disponibiliza um equalizador para apps.</string>
+    <string name="eq_loading">A ler o equalizador do dispositivo…</string>
+    <string name="eq_preset">Predefinição</string>
+    <string name="eq_preset_custom">Personalizada</string>
+    <string name="eq_band">Banda %1$s</string>
+    <string name="eq_bass_boost">Reforço de graves</string>
+    <string name="eq_bass_strength">Intensidade dos graves</string>
+    <string name="eq_reset">Repor valores</string>
+    <string name="eq_system_panel">Abrir efeitos de som do sistema</string>
+    <string name="eq_vendor_note">Alguns fabricantes aplicam os seus próprios efeitos de som, que podem ignorar ou substituir os do Veyra.</string>
+
+    <string name="settings_section_appearance">Aparência</string>
+    <string name="appearance_system">Seguir o sistema</string>
+    <string name="appearance_dark">Escuro</string>
+    <string name="appearance_light">Claro</string>
+    <string name="settings_section_language">Idioma</string>
+    <string name="language_system">Seguir o sistema</string>
+    <string name="settings_section_about">Sobre</string>
+    <string name="about_version">Versão %1$s</string>
+    <string name="about_privacy">Sem contas, sem anúncios e sem ligação à internet. A tua música, as playlists e as definições ficam apenas neste dispositivo.</string>
+</resources>

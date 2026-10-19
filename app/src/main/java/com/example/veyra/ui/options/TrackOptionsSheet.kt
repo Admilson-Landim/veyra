@@ -26,6 +26,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -169,6 +170,8 @@ fun TrackPropertiesSheet(track: Track, onDismiss: () -> Unit) {
                     .semantics { heading() },
             )
             val d = details
+            // Formats numbers and dates in the app's language, which may differ from the system's.
+            val locale = LocalConfiguration.current.locales[0]
             if (d == null) {
                 Text(stringResource(R.string.properties_loading), color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
@@ -182,10 +185,10 @@ fun TrackPropertiesSheet(track: Track, onDismiss: () -> Unit) {
                     R.string.prop_duration to d.durationMs.takeIf { it > 0 }?.let(::formatDuration),
                     R.string.prop_format to formatMimeType(d.mimeType),
                     R.string.prop_bitrate to formatBitrate(d.bitrateBps),
-                    R.string.prop_sample_rate to formatSampleRate(d.sampleRateHz),
-                    R.string.prop_size to formatFileSize(d.sizeBytes),
+                    R.string.prop_sample_rate to formatSampleRate(d.sampleRateHz, locale),
+                    R.string.prop_size to formatFileSize(d.sizeBytes, locale),
                     R.string.prop_path to d.path,
-                    R.string.prop_date_added to formatDateAdded(d.dateAddedSeconds),
+                    R.string.prop_date_added to formatDateAdded(d.dateAddedSeconds, locale),
                 )
                 rows.forEach { (label, value) -> PropertyRow(stringResource(label), value ?: unknown) }
             }

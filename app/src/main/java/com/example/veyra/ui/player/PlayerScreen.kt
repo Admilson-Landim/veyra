@@ -7,12 +7,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -38,10 +40,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.veyra.R
 import com.example.veyra.data.clips.AppliedRule
@@ -113,94 +117,142 @@ fun PlayerScreen(
     Surface(color = MaterialTheme.colorScheme.background, modifier = modifier.fillMaxSize()) {
         Box(Modifier.windowInsetsPadding(WindowInsets.safeDrawing)) {
             BoxWithConstraints(Modifier.fillMaxSize()) {
-                // Artwork fits the screen: never wider than the content, nor taller than ~45% of it.
-                val artworkDp = minOf(maxWidth - 48.dp, maxHeight * 0.45f, 360.dp)
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 24.dp),
-                ) {
-                    Row(Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                        IconButton(onClick = onClose) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_expand_more),
-                                contentDescription = stringResource(R.string.player_close),
-                                tint = MaterialTheme.colorScheme.onSurface,
-                            )
-                        }
-                        Spacer(Modifier.weight(1f))
-                        if (onAdjustClip != null) {
-                            IconButton(onClick = onAdjustClip) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_content_cut),
-                                    contentDescription = stringResource(R.string.clip_adjust),
-                                    tint = MaterialTheme.colorScheme.onSurface,
-                                )
-                            }
-                        }
-                        if (onTrackOptions != null) {
-                            IconButton(onClick = onTrackOptions) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_more_vert),
-                                    contentDescription = stringResource(R.string.track_options),
-                                    tint = MaterialTheme.colorScheme.onSurface,
-                                )
-                            }
-                        }
-                    }
-                    Spacer(Modifier.height(16.dp))
-                    // Swipe the cover left/right to change track; the seek slider sits outside it.
-                    SwipeToSkip(
-                        onNext = actions.onNext,
-                        onPrevious = actions.onPrevious,
-                        nextLabel = stringResource(R.string.player_next),
-                        previousLabel = stringResource(R.string.player_previous),
+                val topBar = @Composable { PlayerTopBar(onClose, onAdjustClip, onTrackOptions) }
+                val details = @Composable { PlayerDetails(state, actions, rule) }
+                // Landscape (wide and short): artwork on the left, everything else on the right,
+                // so the controls are visible without scrolling.
+                if (maxWidth > maxHeight && maxHeight < 600.dp) {
+                    val artworkDp = minOf(maxHeight - 48.dp, maxWidth * 0.4f)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 24.dp),
                     ) {
-                        TrackArtwork(contentUri = state.artworkUri, size = artworkDp, artworkSize = ArtworkSize.Large)
-                    }
-                    Spacer(Modifier.height(32.dp))
-                    Column(Modifier.widthIn(max = 480.dp)) {
-                        Text(
-                            text = state.title ?: stringResource(R.string.track_unknown_title),
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            textAlign = TextAlign.Center,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = state.artist ?: stringResource(R.string.track_unknown_artist),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        if (rule != null) {
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                text = rule.text,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = if (rule.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
+                        PlayerArtwork(state, actions, artworkDp)
+                        Spacer(Modifier.width(24.dp))
+                        Column(
+                            Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .verticalScroll(rememberScrollState()),
+                        ) {
+                            topBar()
+                            details()
                         }
-                        Spacer(Modifier.height(24.dp))
-                        SeekBar(state = state, onSeek = actions.onSeek)
+                    }
+                } else {
+                    // Artwork fits the screen: never wider than the content, nor taller than ~45% of it.
+                    val artworkDp = minOf(maxWidth - 48.dp, maxHeight * 0.45f, 360.dp)
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 24.dp),
+                    ) {
+                        topBar()
                         Spacer(Modifier.height(16.dp))
-                        TransportControls(state = state, actions = actions)
-                        Spacer(Modifier.height(24.dp))
+                        PlayerArtwork(state, actions, artworkDp)
+                        Spacer(Modifier.height(32.dp))
+                        details()
                     }
                 }
             }
             SnackbarHost(snackbarHostState, Modifier.align(Alignment.BottomCenter))
         }
+    }
+}
+
+@Composable
+private fun PlayerTopBar(onClose: () -> Unit, onAdjustClip: (() -> Unit)?, onTrackOptions: (() -> Unit)?) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp),
+    ) {
+        IconButton(onClick = onClose) {
+            Icon(
+                painter = painterResource(R.drawable.ic_expand_more),
+                contentDescription = stringResource(R.string.player_close),
+                tint = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+        Spacer(Modifier.weight(1f))
+        if (onAdjustClip != null) {
+            IconButton(onClick = onAdjustClip) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_content_cut),
+                    contentDescription = stringResource(R.string.clip_adjust),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        }
+        if (onTrackOptions != null) {
+            IconButton(onClick = onTrackOptions) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_more_vert),
+                    contentDescription = stringResource(R.string.track_options),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlayerArtwork(state: PlayerState, actions: PlayerActions, size: Dp) {
+    // Swipe the cover left/right to change track; the seek slider sits outside it.
+    SwipeToSkip(
+        onNext = actions.onNext,
+        onPrevious = actions.onPrevious,
+        nextLabel = stringResource(R.string.player_next),
+        previousLabel = stringResource(R.string.player_previous),
+    ) {
+        TrackArtwork(contentUri = state.artworkUri, size = size, artworkSize = ArtworkSize.Large)
+    }
+}
+
+/** Title, artist, rule line, seek bar and transport controls, in reading order for TalkBack. */
+@Composable
+private fun PlayerDetails(state: PlayerState, actions: PlayerActions, rule: RuleIndicator?) {
+    Column(Modifier.widthIn(max = 480.dp)) {
+        Text(
+            text = state.title ?: stringResource(R.string.track_unknown_title),
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { heading() },
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = state.artist ?: stringResource(R.string.track_unknown_artist),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        if (rule != null) {
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = rule.text,
+                style = MaterialTheme.typography.labelMedium,
+                color = if (rule.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        Spacer(Modifier.height(24.dp))
+        SeekBar(state = state, onSeek = actions.onSeek)
+        Spacer(Modifier.height(16.dp))
+        TransportControls(state = state, actions = actions)
+        Spacer(Modifier.height(24.dp))
     }
 }
 

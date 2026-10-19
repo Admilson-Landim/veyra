@@ -54,6 +54,9 @@ data class PlaybackPreferences(
 
 const val DEFAULT_GLOBAL_SKIP_SECONDS = 10
 
+/** Settings > Appearance. */
+enum class AppearanceMode { System, Dark, Light }
+
 /**
  * Folders excluded by default. They hold voice recordings and voice notes, which MediaStore
  * often flags as music:
@@ -144,6 +147,12 @@ class AppPreferences private constructor(private val store: DataStore<Preference
         it[KEY_BASS_STRENGTH] = settings.bassStrength
     }
 
+    val appearance: Flow<AppearanceMode> = store.data
+        .map { prefs -> AppearanceMode.entries.firstOrNull { it.name == prefs[KEY_APPEARANCE] } ?: AppearanceMode.System }
+        .distinctUntilChanged()
+
+    suspend fun setAppearance(mode: AppearanceMode) = store.edit { it[KEY_APPEARANCE] = mode.name }
+
     suspend fun setSort(sort: TrackSort) = store.edit { it[KEY_SORT] = sort.name }
 
     suspend fun setExcludedFolders(folders: Set<String>) = store.edit { it[KEY_EXCLUDED_FOLDERS] = folders }
@@ -161,6 +170,7 @@ class AppPreferences private constructor(private val store: DataStore<Preference
 
     companion object {
         private val KEY_SORT = stringPreferencesKey("library_sort")
+        private val KEY_APPEARANCE = stringPreferencesKey("appearance")
         private val KEY_EXCLUDED_FOLDERS = stringSetPreferencesKey("library_excluded_folders")
         private val KEY_SKIP_SHORT = booleanPreferencesKey("library_skip_short")
         private val KEY_MIN_DURATION = intPreferencesKey("library_min_duration_s")

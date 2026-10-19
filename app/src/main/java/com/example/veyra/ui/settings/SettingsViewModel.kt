@@ -14,6 +14,7 @@ import com.example.veyra.data.media.ArtworkLoader
 import com.example.veyra.data.media.isInFolder
 import com.example.veyra.data.media.normalizeFolder
 import com.example.veyra.data.settings.AppPreferences
+import com.example.veyra.data.settings.AppearanceMode
 import com.example.veyra.data.settings.DEFAULT_EXCLUDED_FOLDERS
 import com.example.veyra.data.settings.LibraryPreferences
 import com.example.veyra.data.settings.PlaybackPreferences
@@ -37,6 +38,7 @@ data class SettingsUiState(
     val library: LibraryPreferences = LibraryPreferences(),
     val playback: PlaybackPreferences = PlaybackPreferences(),
     val equalizer: EqualizerSettings = EqualizerSettings(),
+    val appearance: AppearanceMode = AppearanceMode.System,
     /** Folders that hold music and are not excluded yet, for the "exclude a folder" picker. */
     val excludableFolders: List<String> = emptyList(),
 )
@@ -49,13 +51,13 @@ class SettingsViewModel(
 ) : ViewModel() {
 
     val state: StateFlow<SettingsUiState> =
-        combine(preferences.library, library, preferences.playback, preferences.equalizer) { prefs, lib, playback, eq ->
+        combine(preferences.library, library, preferences.playback, preferences.equalizer, preferences.appearance) { prefs, lib, playback, eq, appearance ->
             val folders = lib.allTracksOrNull.orEmpty()
                 .mapNotNull { it.relativePath?.let(::normalizeFolder)?.takeIf(String::isNotEmpty) }
                 .distinct()
                 .filter { folder -> prefs.excludedFolders.none { isInFolder(folder, it) } }
                 .sortedWith(String.CASE_INSENSITIVE_ORDER)
-            SettingsUiState(prefs, playback, eq, folders)
+            SettingsUiState(prefs, playback, eq, appearance, folders)
         }
             .flowOn(Dispatchers.Default)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
@@ -81,6 +83,10 @@ class SettingsViewModel(
 
     /** The photos permission was just granted (Android 13+): covers can now be found. */
     fun onImagesPermissionGranted() = setUseDeviceImages(true)
+
+    fun setAppearance(mode: AppearanceMode) {
+        viewModelScope.launch { preferences.setAppearance(mode) }
+    }
 
     fun updatePlayback(change: (PlaybackPreferences) -> PlaybackPreferences) {
         val next = change(state.value.playback)

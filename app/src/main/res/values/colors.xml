@@ -3,4 +3,6 @@
     <!-- Mirrors VeyraPalette for XML-only uses (window background, launcher icon). -->
     <color name="veyra_charcoal">#FF17181C</color>
     <color name="veyra_champagne">#FFD8C8A4</color>
+    <!-- Window background before Compose draws: Ivory in light mode, Charcoal in dark. -->
+    <color name="veyra_window">#FFF3F0E9</color>
 </resources>

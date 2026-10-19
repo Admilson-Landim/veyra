@@ -14,3 +14,7 @@
 .externalNativeBuild
 .cxx
 local.properties
+# Release signing: local only, never committed.
+keystore.properties
+*.jks
+*.keystore

@@ -40,8 +40,8 @@ internal val VeyraDarkColorScheme: ColorScheme = darkColorScheme(
     scrim = VeyraPalette.Charcoal,
 )
 
-// Provisional light scheme so the theme structure already supports both modes.
-// It is not exposed in the UI yet; the light theme is designed in Phase 10.
+// Light: Ivory base, Charcoal text. Champagne itself is too pale for text on Ivory, so accents
+// use Bronze (a darkened Champagne) and Champagne-tinted Sand for filled surfaces.
 internal val VeyraLightColorScheme: ColorScheme = lightColorScheme(
     primary = VeyraPalette.Bronze,
     onPrimary = VeyraPalette.Ivory,
@@ -49,21 +49,36 @@ internal val VeyraLightColorScheme: ColorScheme = lightColorScheme(
     onPrimaryContainer = VeyraPalette.Charcoal,
     secondary = VeyraPalette.Pebble,
     onSecondary = VeyraPalette.Ivory,
+    secondaryContainer = VeyraPalette.Sand,
+    onSecondaryContainer = VeyraPalette.Charcoal,
+    tertiary = VeyraPalette.Bronze,
+    onTertiary = VeyraPalette.Ivory,
     background = VeyraPalette.Ivory,
     onBackground = VeyraPalette.Charcoal,
     surface = VeyraPalette.Ivory,
     onSurface = VeyraPalette.Charcoal,
-    surfaceVariant = VeyraPalette.Sand,
+    surfaceVariant = VeyraPalette.Linen,
     onSurfaceVariant = VeyraPalette.Ash,
+    surfaceContainerLowest = VeyraPalette.Ivory,
+    surfaceContainerLow = VeyraPalette.Linen,
+    surfaceContainer = VeyraPalette.Linen,
+    surfaceContainerHigh = VeyraPalette.Parchment,
+    surfaceContainerHighest = VeyraPalette.Sand,
+    surfaceBright = VeyraPalette.Ivory,
+    surfaceDim = VeyraPalette.Parchment,
     outline = VeyraPalette.Pebble,
+    outlineVariant = VeyraPalette.Mist,
     inverseSurface = VeyraPalette.Charcoal,
     inverseOnSurface = VeyraPalette.Ivory,
     inversePrimary = VeyraPalette.Champagne,
+    error = VeyraPalette.ErrorDark,
+    onError = VeyraPalette.Ivory,
+    scrim = VeyraPalette.Charcoal,
 )
 
 /**
- * Veyra's Material 3 theme. Dark is the default and, for now, the only mode the app uses.
- * Dynamic (wallpaper) colour is intentionally not supported: the brand palette always wins.
+ * Veyra's Material 3 theme, dark or light. Dynamic (wallpaper) colour is intentionally not
+ * supported: the brand palette always wins.
  */
 @Composable
 fun VeyraTheme(

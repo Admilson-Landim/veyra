@@ -25,6 +25,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -52,7 +55,7 @@ fun LazyListScope.playbackSection(
     item(key = "skip-start") {
         SwitchRow(
             title = stringResource(R.string.settings_skip_start),
-            detail = stringResource(R.string.settings_skip_start_detail, playback.skipStartSeconds),
+            detail = pluralStringResource(R.plurals.settings_skip_start_detail, playback.skipStartSeconds, playback.skipStartSeconds),
             checked = playback.skipStartEnabled,
             onCheckedChange = { on -> onChange { it.copy(skipStartEnabled = on) } },
         )
@@ -63,7 +66,7 @@ fun LazyListScope.playbackSection(
     item(key = "skip-end") {
         SwitchRow(
             title = stringResource(R.string.settings_skip_end),
-            detail = stringResource(R.string.settings_skip_end_detail, playback.skipEndSeconds),
+            detail = pluralStringResource(R.plurals.settings_skip_end_detail, playback.skipEndSeconds, playback.skipEndSeconds),
             checked = playback.skipEndEnabled,
             onCheckedChange = { on -> onChange { it.copy(skipEndEnabled = on) } },
         )
@@ -73,7 +76,7 @@ fun LazyListScope.playbackSection(
     }
     item(key = "global-note") {
         Text(
-            text = stringResource(R.string.settings_global_note, (MIN_GLOBAL_REMAINING_MS / 1000).toInt()),
+            text = (MIN_GLOBAL_REMAINING_MS / 1000).toInt().let { pluralStringResource(R.plurals.settings_global_note, it, it) },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
@@ -96,7 +99,7 @@ private fun SecondsStepper(seconds: Int, onChange: (Int) -> Unit) {
             Text(stringResource(R.string.settings_seconds_minus))
         }
         Text(
-            "$seconds s",
+            stringResource(R.string.value_seconds, seconds),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(horizontal = 8.dp),
@@ -167,11 +170,12 @@ private fun EqualizerPanel(
                 onCheckedChange = { on -> onChange { it.copy(bassBoostEnabled = on) } },
             )
             if (settings.bassBoostEnabled) {
+                val percent = LocalResources.current
                 LevelSlider(
                     label = stringResource(R.string.eq_bass_strength),
                     value = settings.bassStrength,
                     range = 0..BASS_STRENGTH_MAX,
-                    format = { "${it / 10}%" },
+                    format = { percent.getString(R.string.value_percent, it / 10) },
                     onValue = { strength -> onChange { it.copy(bassStrength = strength) } },
                 )
             }
@@ -214,11 +218,13 @@ private fun PresetPicker(settings: EqualizerSettings, caps: EqualizerCapabilitie
 
 @Composable
 private fun BandSlider(label: String, level: Int, range: IntRange, onLevel: (Int) -> Unit) {
+    // The app's language (may differ from the system's), for the decimal separator.
+    val locale = LocalConfiguration.current.locales[0]
     LevelSlider(
         label = label,
         value = level,
         range = range,
-        format = { formatDecibels(it) },
+        format = { formatDecibels(it, locale) },
         onValue = onLevel,
         accessibilityLabel = stringResource(R.string.eq_band, label),
     )

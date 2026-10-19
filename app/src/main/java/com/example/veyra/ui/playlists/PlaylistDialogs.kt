@@ -12,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -38,7 +39,7 @@ fun PlaylistNameDialog(
     val validation = validatePlaylistName(text, existingNames)
     val error = when (validation) {
         PlaylistNameValidation.Empty -> stringResource(R.string.playlist_name_empty)
-        PlaylistNameValidation.TooLong -> stringResource(R.string.playlist_name_too_long, PLAYLIST_NAME_MAX_LENGTH)
+        PlaylistNameValidation.TooLong -> pluralStringResource(R.plurals.playlist_name_too_long, PLAYLIST_NAME_MAX_LENGTH, PLAYLIST_NAME_MAX_LENGTH)
         PlaylistNameValidation.Duplicate -> stringResource(R.string.playlist_name_duplicate)
         is PlaylistNameValidation.Valid -> null
     }

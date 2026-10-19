@@ -19,9 +19,14 @@ object VeyraPalette {
     val Stone = Color(0xFFA9A69E)
     val Pebble = Color(0xFF6E6D69)
 
-    // Darker champagne tones for accents on light surfaces (provisional, Phase 10).
+    // Light theme: a darker champagne for accents and text-level contrast on Ivory,
+    // and Ivory-based surfaces stepping down towards Champagne.
     val Bronze = Color(0xFF6B5B37)
     val Sand = Color(0xFFE6DCC6)
+    val Linen = Color(0xFFEBE7DE)
+    val Parchment = Color(0xFFE3DED2)
+    val Mist = Color(0xFFCBC6BA)
+    val ErrorDark = Color(0xFFA3352A)
 
     val Error = Color(0xFFE5A39A)
     val OnError = Color(0xFF3A1410)

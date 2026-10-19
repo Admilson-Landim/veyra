@@ -37,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -170,7 +171,7 @@ fun SettingsScreen(viewModel: SettingsViewModel, modifier: Modifier = Modifier) 
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                         Text(
-                            stringResource(R.string.settings_skip_short_detail, prefs.minDurationSeconds),
+                            pluralStringResource(R.plurals.settings_skip_short_detail, prefs.minDurationSeconds, prefs.minDurationSeconds),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -194,7 +195,7 @@ fun SettingsScreen(viewModel: SettingsViewModel, modifier: Modifier = Modifier) 
                             enabled = prefs.minDurationSeconds > MIN_DURATION_STEP_SECONDS,
                         ) { Text(stringResource(R.string.settings_min_duration_minus)) }
                         Text(
-                            "${prefs.minDurationSeconds} s",
+                            stringResource(R.string.value_seconds, prefs.minDurationSeconds),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(horizontal = 8.dp),
@@ -217,6 +218,10 @@ fun SettingsScreen(viewModel: SettingsViewModel, modifier: Modifier = Modifier) 
                 onReset = viewModel::resetEqualizer,
                 onOpenSystemPanel = { systemPanel?.let(context::startActivity) },
             )
+
+            appearanceSection(state.appearance, viewModel::setAppearance)
+            languageSection()
+            aboutSection()
         }
     }
 

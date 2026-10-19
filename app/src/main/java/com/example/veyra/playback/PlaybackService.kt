@@ -1,11 +1,16 @@
 package com.example.veyra.playback
 
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.os.Build
 import android.os.Handler
+import android.os.LocaleList
 import android.os.Looper
 import androidx.annotation.OptIn
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.media3.common.AudioAttributes
@@ -117,6 +122,22 @@ class PlaybackService : MediaSessionService() {
                 player.skipSilenceEnabled = it
             }
         }
+    }
+
+    /**
+     * Notification texts (shuffle/repeat buttons, Media3's own labels) follow the app language.
+     * Android 13+ applies it to every context; before that AppCompat only localises activities,
+     * so the service applies the chosen locales to its own configuration here.
+     */
+    override fun attachBaseContext(base: Context) {
+        val locales = AppCompatDelegate.getApplicationLocales()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU || locales.isEmpty) {
+            super.attachBaseContext(base)
+            return
+        }
+        val config = Configuration(base.resources.configuration)
+        config.setLocales(LocaleList.forLanguageTags(locales.toLanguageTags()))
+        super.attachBaseContext(base.createConfigurationContext(config))
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = mediaSession

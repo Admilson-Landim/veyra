@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- Dark window theme so the app never flashes white before Compose draws. -->
-    <style name="Theme.Veyra" parent="android:Theme.Material.NoActionBar">
-        <item name="android:windowBackground">@color/veyra_charcoal</item>
-        <item name="android:colorBackground">@color/veyra_charcoal</item>
+    <!-- AppCompat (needed for per-app language on Android 12 and older). Compose draws the UI;
+         this only sets the window behind it, so the app never flashes the wrong colour. -->
+    <style name="Theme.Veyra" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/veyra_window</item>
+        <item name="android:colorBackground">@color/veyra_window</item>
     </style>
 </resources>

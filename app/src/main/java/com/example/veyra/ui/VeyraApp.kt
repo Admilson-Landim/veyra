@@ -163,12 +163,14 @@ fun VeyraApp(
     Box(Modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val useRail = maxWidth >= RailBreakpoint
+            // Short screens (phone in landscape): the brand header would take most of the height.
+            val showBrandHeader = maxHeight >= 480.dp
 
             Scaffold(
                 containerColor = MaterialTheme.colorScheme.background,
                 snackbarHost = { if (!showPlayer) SnackbarHost(snackbarHostState) },
                 topBar = {
-                    VeyraHeader(
+                    if (showBrandHeader) VeyraHeader(
                         modifier = Modifier
                             .fillMaxWidth()
                             .windowInsetsPadding(

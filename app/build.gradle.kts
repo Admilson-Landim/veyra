@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -21,12 +23,26 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Release signing comes from keystore.properties at the project root, which is git-ignored.
+    // Without it, assembleRelease still builds, but the APK is unsigned (not installable).
+    val keystoreFile = rootProject.file("keystore.properties")
+    val keystore = Properties().apply { if (keystoreFile.exists()) keystoreFile.inputStream().use(::load) }
+    signingConfigs {
+        if (keystoreFile.exists()) {
+            create("release") {
+                storeFile = rootProject.file(keystore.getProperty("storeFile"))
+                storePassword = keystore.getProperty("storePassword")
+                keyAlias = keystore.getProperty("keyAlias")
+                keyPassword = keystore.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            optimization {
-                enable = true
-                packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")
-            }
+            isMinifyEnabled = true
+            isShrinkResources = true
+            signingConfig = signingConfigs.findByName("release")
         }
     }
     compileOptions {
@@ -35,6 +51,16 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
+    }
+    bundle {
+        // The in-app language switch needs every language in the install: an App Bundle split
+        // by language would leave the other language's texts out.
+        language { enableSplit = false }
+    }
+    androidResources {
+        // Generates the locale_config for Android 13+'s per-app language picker from values-*.
+        generateLocaleConfig = true
     }
     lint {
         // READ_MEDIA_IMAGES is only used to find cover images by folder and name; partial
@@ -64,6 +90,7 @@ dependencies {
     implementation(libs.androidx.media3.session)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.appcompat)
     // Aligns the app with room-testing (see libs.versions.toml).
     implementation(libs.kotlinx.serialization.core)
     ksp(libs.androidx.room.compiler)

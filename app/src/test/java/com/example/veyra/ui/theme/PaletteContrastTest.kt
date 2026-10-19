@@ -37,5 +37,19 @@ class PaletteContrastTest {
         assertContrast("onSurfaceVariant/background", onSurfaceVariant, background, 4.5)
         assertContrast("primary/background", primary, background, 4.5)
         assertContrast("onPrimary/primary", onPrimary, primary, 4.5)
+        assertContrast("onSurface/surfaceContainerHigh", onSurface, surfaceContainerHigh, 4.5)
+        assertContrast("onSurfaceVariant/surfaceContainer", onSurfaceVariant, surfaceContainer, 4.5)
+        assertContrast("primary/surfaceContainerHigh", primary, surfaceContainerHigh, 4.5)
+        assertContrast("primary/secondaryContainer", primary, secondaryContainer, 4.5)
+        assertContrast("onSecondaryContainer/secondaryContainer", onSecondaryContainer, secondaryContainer, 4.5)
+        assertContrast("error/background", error, background, 4.5)
+        // Non-text UI (slider tracks, outlines) needs 3:1 against its background.
+        assertContrast("outline/background", outline, background, 3.0)
+    }
+
+    @Test
+    fun darkScheme_errorAndOutlinesAreVisible() = with(VeyraDarkColorScheme) {
+        assertContrast("error/background", error, background, 4.5)
+        assertContrast("outline/background", outline, background, 3.0)
     }
 }
