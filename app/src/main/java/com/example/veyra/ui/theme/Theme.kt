@@ -1,58 +1,79 @@
 package com.example.veyra.ui.theme
 
-import android.app.Activity
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+internal val VeyraDarkColorScheme: ColorScheme = darkColorScheme(
+    primary = VeyraPalette.Champagne,
+    onPrimary = VeyraPalette.Charcoal,
+    primaryContainer = VeyraPalette.Smoke,
+    onPrimaryContainer = VeyraPalette.Champagne,
+    secondary = VeyraPalette.Stone,
+    onSecondary = VeyraPalette.Charcoal,
+    secondaryContainer = VeyraPalette.Slate,
+    onSecondaryContainer = VeyraPalette.Ivory,
+    tertiary = VeyraPalette.Champagne,
+    onTertiary = VeyraPalette.Charcoal,
+    background = VeyraPalette.Charcoal,
+    onBackground = VeyraPalette.Ivory,
+    surface = VeyraPalette.Charcoal,
+    onSurface = VeyraPalette.Ivory,
+    surfaceVariant = VeyraPalette.Slate,
+    onSurfaceVariant = VeyraPalette.Stone,
+    surfaceContainerLowest = VeyraPalette.Charcoal,
+    surfaceContainerLow = VeyraPalette.Graphite,
+    surfaceContainer = VeyraPalette.Graphite,
+    surfaceContainerHigh = VeyraPalette.Slate,
+    surfaceContainerHighest = VeyraPalette.Smoke,
+    surfaceBright = VeyraPalette.Smoke,
+    surfaceDim = VeyraPalette.Charcoal,
+    outline = VeyraPalette.Pebble,
+    outlineVariant = VeyraPalette.Ash,
+    inverseSurface = VeyraPalette.Ivory,
+    inverseOnSurface = VeyraPalette.Charcoal,
+    inversePrimary = VeyraPalette.Bronze,
+    error = VeyraPalette.Error,
+    onError = VeyraPalette.OnError,
+    scrim = VeyraPalette.Charcoal,
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+// Provisional light scheme so the theme structure already supports both modes.
+// It is not exposed in the UI yet; the light theme is designed in Phase 8.
+internal val VeyraLightColorScheme: ColorScheme = lightColorScheme(
+    primary = VeyraPalette.Bronze,
+    onPrimary = VeyraPalette.Ivory,
+    primaryContainer = VeyraPalette.Sand,
+    onPrimaryContainer = VeyraPalette.Charcoal,
+    secondary = VeyraPalette.Pebble,
+    onSecondary = VeyraPalette.Ivory,
+    background = VeyraPalette.Ivory,
+    onBackground = VeyraPalette.Charcoal,
+    surface = VeyraPalette.Ivory,
+    onSurface = VeyraPalette.Charcoal,
+    surfaceVariant = VeyraPalette.Sand,
+    onSurfaceVariant = VeyraPalette.Ash,
+    outline = VeyraPalette.Pebble,
+    inverseSurface = VeyraPalette.Charcoal,
+    inverseOnSurface = VeyraPalette.Ivory,
+    inversePrimary = VeyraPalette.Champagne,
 )
 
+/**
+ * Veyra's Material 3 theme. Dark is the default and, for now, the only mode the app uses.
+ * Dynamic (wallpaper) colour is intentionally not supported: the brand palette always wins.
+ */
 @Composable
 fun VeyraTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
-    content: @Composable () -> Unit
+    darkTheme: Boolean = true,
+    content: @Composable () -> Unit,
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
-
     MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
+        colorScheme = if (darkTheme) VeyraDarkColorScheme else VeyraLightColorScheme,
+        typography = VeyraTypography,
+        shapes = VeyraShapes,
+        content = content,
     )
 }

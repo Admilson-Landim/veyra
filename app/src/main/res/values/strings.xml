@@ -1,3 +1,20 @@
 <resources>
-    <string name="app_name">veyra</string>
+    <string name="app_name" translatable="false">Veyra</string>
+    <string name="brand_slogan" translatable="false">Your Music, Your Way.</string>
+
+    <string name="nav_library">Biblioteca</string>
+    <string name="nav_playlists">Playlists</string>
+    <string name="nav_settings">Definições</string>
+
+    <string name="library_title">Biblioteca</string>
+    <string name="library_empty_title">Ainda não há músicas</string>
+    <string name="library_empty_message">A leitura das músicas guardadas no dispositivo chega numa próxima versão do Veyra.</string>
+
+    <string name="playlists_title">Playlists</string>
+    <string name="playlists_empty_title">Playlists em breve</string>
+    <string name="playlists_empty_message">A criação e organização de playlists ainda não está disponível.</string>
+
+    <string name="settings_title">Definições</string>
+    <string name="settings_empty_title">Definições em breve</string>
+    <string name="settings_empty_message">As opções de personalização do Veyra ainda não estão disponíveis.</string>
 </resources>

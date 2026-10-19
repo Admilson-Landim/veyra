@@ -2,10 +2,27 @@ package com.example.veyra.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// Brand palette. These are the only raw colour values in the app;
+// everything else references them through the Material colour schemes in Theme.kt.
+object VeyraPalette {
+    val Charcoal = Color(0xFF17181C)
+    val Ivory = Color(0xFFF3F0E9)
+    val Champagne = Color(0xFFD8C8A4)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+    // Neutral dark surfaces, stepping up from Charcoal.
+    val Graphite = Color(0xFF1F2025)
+    val Slate = Color(0xFF27282E)
+    val Smoke = Color(0xFF32333A)
+    val Ash = Color(0xFF45464E)
+
+    // Muted text and outlines on dark surfaces.
+    val Stone = Color(0xFFA9A69E)
+    val Pebble = Color(0xFF6E6D69)
+
+    // Darker champagne tones for accents on light surfaces (provisional, Phase 8).
+    val Bronze = Color(0xFF6B5B37)
+    val Sand = Color(0xFFE6DCC6)
+
+    val Error = Color(0xFFE5A39A)
+    val OnError = Color(0xFF3A1410)
+}
