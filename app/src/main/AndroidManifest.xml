@@ -12,6 +12,8 @@
     <!-- PlaybackService runs as a media playback foreground service while music plays. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- Keeps the CPU awake while playing with the screen off (ExoPlayer wake mode). -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
         android:allowBackup="true"
@@ -25,6 +27,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.Veyra"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>

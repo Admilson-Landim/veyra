@@ -59,10 +59,19 @@ private val RailBreakpoint = 600.dp
 
 @Composable
 fun VeyraApp(
+    /** Each increment asks to show the full player (e.g. the notification was tapped). */
+    openPlayerRequests: Int = 0,
     playerViewModel: PlayerViewModel = viewModel(factory = PlayerViewModel.Factory),
 ) {
     var destination by rememberSaveable { mutableStateOf(VeyraDestination.Library) }
     var playerOpen by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(openPlayerRequests) {
+        if (openPlayerRequests > 0) {
+            // The mini-player, and so the way back from the player, lives in the Library.
+            destination = VeyraDestination.Library
+            playerOpen = true
+        }
+    }
     val playerState by playerViewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
