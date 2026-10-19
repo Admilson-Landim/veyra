@@ -61,6 +61,7 @@ import com.example.veyra.ui.player.MiniPlayer
 import com.example.veyra.ui.player.PlayerActions
 import com.example.veyra.ui.player.PlayerScreen
 import com.example.veyra.ui.player.PlayerViewModel
+import com.example.veyra.ui.player.ruleIndicatorFor
 import com.example.veyra.ui.playlists.AddToPlaylistSheet
 import com.example.veyra.ui.playlists.DeletePlaylistDialog
 import com.example.veyra.ui.playlists.PlaylistDetailActions
@@ -122,6 +123,7 @@ fun VeyraApp(
     val libraryState by libraryViewModel.uiState.collectAsStateWithLifecycle()
     val playlists by playlistsViewModel.playlists.collectAsStateWithLifecycle()
     val clips by playerViewModel.clips.collectAsStateWithLifecycle()
+    val globalRule by playerViewModel.globalRule.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
     val scope = rememberCoroutineScope()
@@ -250,7 +252,7 @@ fun VeyraApp(
                 snackbarHostState = snackbarHostState,
                 onTrackOptions = currentTrack?.let { track -> { optionsTrack = track } },
                 onAdjustClip = currentTrack?.let { track -> { adjustClipTrack = track } },
-                clip = currentTrack?.let { clips[it.id] },
+                rule = currentTrack?.let { ruleIndicatorFor(it, clips[it.id], globalRule) },
             )
         }
     }
@@ -329,6 +331,7 @@ fun VeyraApp(
         AdjustClipSheet(
             track = track,
             stored = clips[track.id],
+            global = globalRule,
             mainPlayerPositionMs = {
                 if (playerState.currentMediaId == track.id.toString()) playerViewModel.absolutePositionMs() else null
             },
@@ -337,10 +340,15 @@ fun VeyraApp(
                 playerViewModel.saveClip(track, clip)
                 showMessage(resources.getString(R.string.clip_saved))
             },
-            onReset = {
+            onUseGlobal = {
                 adjustClipTrack = null
                 playerViewModel.resetClip(track)
                 showMessage(resources.getString(R.string.clip_reset_done))
+            },
+            onFull = {
+                adjustClipTrack = null
+                playerViewModel.setFullTrack(track)
+                showMessage(resources.getString(R.string.clip_saved))
             },
             onDismiss = { adjustClipTrack = null },
         )

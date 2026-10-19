@@ -3,7 +3,11 @@ package com.example.veyra.playback
 import androidx.media3.common.C
 import androidx.media3.common.MediaMetadata
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.example.veyra.data.clips.ClipMode
+import com.example.veyra.data.clips.GlobalClipRule
+import com.example.veyra.data.clips.ResolvedClip
 import com.example.veyra.data.clips.TrackClip
+import com.example.veyra.data.clips.effectiveClip
 import com.example.veyra.data.media.Track
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -79,5 +83,29 @@ class MediaItemMappingTest {
         val clipping = track().toMediaItem(TrackClip(30_000, 400_000)).clippingConfiguration
         assertEquals(0L, clipping.startPositionMs)
         assertEquals(C.TIME_END_OF_SOURCE, clipping.endPositionMs)
+    }
+
+    @Test
+    fun effectiveClip_eachCase_goesThroughTheSameConversion() {
+        val t = track() // 173 s
+        val global = GlobalClipRule(skipStartMs = 10_000, skipEndMs = 20_000)
+        fun clippingFor(stored: ResolvedClip?) =
+            t.toMediaItem(effectiveClip(stored, global, t.durationMs).clip).clippingConfiguration
+
+        // No setting: the global rule.
+        with(clippingFor(null)) {
+            assertEquals(10_000L, startPositionMs)
+            assertEquals(153_000L, endPositionMs)
+        }
+        // Custom clip wins over the global rule.
+        with(clippingFor(ResolvedClip(listOf(1), TrackClip(30_000, 60_000), isValid = true))) {
+            assertEquals(30_000L, startPositionMs)
+            assertEquals(60_000L, endPositionMs)
+        }
+        // "Always whole file" ignores the global rule.
+        with(clippingFor(ResolvedClip(listOf(1), TrackClip(0, null), isValid = true, mode = ClipMode.Full))) {
+            assertEquals(0L, startPositionMs)
+            assertEquals(C.TIME_END_OF_SOURCE, endPositionMs)
+        }
     }
 }

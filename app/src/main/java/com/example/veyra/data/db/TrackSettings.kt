@@ -8,6 +8,7 @@ import androidx.room.Insert
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Transaction
+import com.example.veyra.data.clips.ClipMode
 import com.example.veyra.data.clips.StoredClip
 import com.example.veyra.data.clips.TrackClip
 import com.example.veyra.data.media.TrackKey
@@ -31,16 +32,22 @@ data class TrackSettingsEntity(
     @ColumnInfo(name = "start_ms") val startMs: Long,
     @ColumnInfo(name = "end_ms") val endMs: Long?,
     @ColumnInfo(name = "updated_at") val updatedAt: Long,
+    /** [ClipMode] name: "Custom" (play the clip) or "Full" (always the whole file). Since v3. */
+    @ColumnInfo(name = "mode", defaultValue = MODE_CUSTOM) val mode: String = MODE_CUSTOM,
 ) {
     fun toStoredClip() = StoredClip(
         rowId = id,
         key = TrackKey(mediaStoreId, relativePath, displayName, sizeBytes, durationMs),
         clip = TrackClip(startMs, endMs),
         updatedAt = updatedAt,
+        // Unknown values (e.g. written by a newer version) fall back to the clip.
+        mode = ClipMode.entries.firstOrNull { it.name == mode } ?: ClipMode.Custom,
     )
 
     companion object {
-        fun from(key: TrackKey, clip: TrackClip, now: Long) = TrackSettingsEntity(
+        const val MODE_CUSTOM = "Custom"
+
+        fun from(key: TrackKey, clip: TrackClip, now: Long, mode: ClipMode = ClipMode.Custom) = TrackSettingsEntity(
             mediaStoreId = key.mediaStoreId,
             relativePath = key.relativePath,
             displayName = key.displayName,
@@ -49,6 +56,7 @@ data class TrackSettingsEntity(
             startMs = clip.startMs,
             endMs = clip.endMs,
             updatedAt = now,
+            mode = mode.name,
         )
     }
 }

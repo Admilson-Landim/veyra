@@ -27,6 +27,7 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,6 +45,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.veyra.R
+import com.example.veyra.data.audio.AudioEffectsSupport
 import com.example.veyra.data.media.ArtworkLoader
 import com.example.veyra.ui.theme.components.VeyraSection
 
@@ -57,6 +59,10 @@ fun SettingsScreen(viewModel: SettingsViewModel, modifier: Modifier = Modifier) 
     var pickingFolder by rememberSaveable { mutableStateOf(false) }
     val prefs = state.library
     val context = LocalContext.current
+    val equalizerProbe by viewModel.equalizerProbe.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { viewModel.loadEqualizer(context) }
+    val sessionId by AudioEffectsSupport.playbackSessionId.collectAsStateWithLifecycle()
+    val systemPanel = remember(sessionId) { systemEffectsPanelIntent(context) }
 
     // Android 13+ needs the photos permission to read cover images; re-checked on every resume.
     var imagesGranted by remember { mutableStateOf(hasImagesPermission(context)) }
@@ -200,6 +206,17 @@ fun SettingsScreen(viewModel: SettingsViewModel, modifier: Modifier = Modifier) 
                     }
                 }
             }
+
+            playbackSection(state.playback, viewModel::updatePlayback)
+
+            soundSection(
+                settings = state.equalizer,
+                probe = equalizerProbe,
+                systemPanel = systemPanel,
+                onChange = viewModel::updateEqualizer,
+                onReset = viewModel::resetEqualizer,
+                onOpenSystemPanel = { systemPanel?.let(context::startActivity) },
+            )
         }
     }
 
@@ -238,7 +255,7 @@ fun SettingsScreen(viewModel: SettingsViewModel, modifier: Modifier = Modifier) 
 }
 
 @Composable
-private fun SwitchRow(title: String, detail: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+internal fun SwitchRow(title: String, detail: String?, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -249,7 +266,9 @@ private fun SwitchRow(title: String, detail: String, checked: Boolean, onChecked
     ) {
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
-            Text(detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (detail != null) {
+                Text(detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
         Spacer(Modifier.width(16.dp))
         Switch(
@@ -269,7 +288,7 @@ private fun hasImagesPermission(context: Context): Boolean =
         PackageManager.PERMISSION_GRANTED
 
 @Composable
-private fun SectionHeader(title: String) {
+internal fun SectionHeader(title: String) {
     Text(
         text = title,
         style = MaterialTheme.typography.labelLarge,

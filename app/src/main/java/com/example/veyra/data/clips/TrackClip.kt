@@ -47,11 +47,37 @@ fun TrackClip.validateFor(durationMs: Long): ClipValidation = validateClip(start
 fun clipToApply(clip: TrackClip?, durationMs: Long): TrackClip? =
     clip?.takeIf { !it.isDefault && it.validateFor(durationMs) == ClipValidation.Valid }
 
-/** A stored clip, as read from the database. */
-data class StoredClip(val rowId: Long, val key: TrackKey, val clip: TrackClip, val updatedAt: Long)
+/**
+ * What a stored per-track setting means. A track without any stored setting follows the global
+ * rule (Phase 9), which is the default and is never stored.
+ */
+enum class ClipMode {
+    /** Play [StoredClip.clip] (Phase 7). */
+    Custom,
 
-/** A stored clip matched to a library track. [isValid] is false when it no longer fits the file. */
-data class ResolvedClip(val rowIds: List<Long>, val clip: TrackClip, val isValid: Boolean)
+    /** Always play the whole file, ignoring the global rule. */
+    Full,
+}
+
+/** A stored per-track setting, as read from the database. */
+data class StoredClip(
+    val rowId: Long,
+    val key: TrackKey,
+    val clip: TrackClip,
+    val updatedAt: Long,
+    val mode: ClipMode = ClipMode.Custom,
+)
+
+/**
+ * A stored setting matched to a library track. [isValid] is false when a custom clip no longer
+ * fits the file (a "full" setting is always valid).
+ */
+data class ResolvedClip(
+    val rowIds: List<Long>,
+    val clip: TrackClip,
+    val isValid: Boolean,
+    val mode: ClipMode = ClipMode.Custom,
+)
 
 /**
  * Matches stored clips to library tracks with [TrackKeyResolver]. If several rows point to the
@@ -69,7 +95,9 @@ fun resolveClips(stored: List<StoredClip>, library: List<Track>): Map<Long, Reso
             track.id to ResolvedClip(
                 rowIds = rows.map { it.rowId },
                 clip = latest.clip,
-                isValid = latest.clip.validateFor(track.durationMs) == ClipValidation.Valid,
+                isValid = latest.mode == ClipMode.Full ||
+                    latest.clip.validateFor(track.durationMs) == ClipValidation.Valid,
+                mode = latest.mode,
             )
         }
         .toMap()

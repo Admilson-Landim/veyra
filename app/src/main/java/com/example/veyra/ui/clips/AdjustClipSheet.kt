@@ -8,9 +8,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -18,6 +21,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
@@ -37,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -44,23 +49,28 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.veyra.R
+import com.example.veyra.data.clips.ClipMode
 import com.example.veyra.data.clips.ClipValidation
+import com.example.veyra.data.clips.GlobalClipRule
 import com.example.veyra.data.clips.MIN_CLIP_LENGTH_MS
 import com.example.veyra.data.clips.ResolvedClip
 import com.example.veyra.data.clips.TrackClip
+import com.example.veyra.data.clips.globalClip
 import com.example.veyra.data.clips.validateClip
 import com.example.veyra.data.media.Track
 import com.example.veyra.playback.ClipPreviewPlayer
-import kotlinx.coroutines.delay
 import kotlin.math.roundToLong
+import kotlinx.coroutines.delay
 
 private const val STEP_MS = 1_000L
 private const val PREVIEW_MS = 5_000L
 
 /**
- * "Adjust start and end" editor for one track. Times shown here are positions in the file.
+ * "Adjust start and end" for one track, with three choices: follow the global rule (default),
+ * a custom clip (Phase 7 editor; times are positions in the file), or always the whole file.
  *
- * @param stored the track's saved clip, if any (possibly no longer valid for the file).
+ * @param stored the track's saved setting, if any (a custom clip may no longer fit the file).
+ * @param global the current global rule, to describe what "use the global rule" means here.
  * @param mainPlayerPositionMs position in the file of the main player, or null when [track]
  *   is not the one playing.
  */
@@ -69,17 +79,28 @@ private const val PREVIEW_MS = 5_000L
 fun AdjustClipSheet(
     track: Track,
     stored: ResolvedClip?,
+    global: GlobalClipRule,
     mainPlayerPositionMs: () -> Long?,
     onSave: (TrackClip) -> Unit,
-    onReset: () -> Unit,
+    onUseGlobal: () -> Unit,
+    onFull: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    var mode by rememberSaveable(track.id) {
+        mutableStateOf(
+            when (stored?.mode) {
+                null -> SheetMode.Global
+                ClipMode.Custom -> SheetMode.Custom
+                ClipMode.Full -> SheetMode.Full
+            },
+        )
+    }
     val duration = track.durationMs
     val context = LocalContext.current
     val preview = remember { ClipPreviewPlayer(context) }
     DisposableEffect(preview) { onDispose { preview.release() } }
 
-    val initial = stored?.takeIf { it.isValid }?.clip
+    val initial = stored?.takeIf { it.isValid && it.mode == ClipMode.Custom }?.clip
     var startMs by rememberSaveable(track.id) { mutableLongStateOf(initial?.startMs ?: 0L) }
     var endMs by rememberSaveable(track.id) { mutableLongStateOf(initial?.endMs ?: duration) }
     var usedPreview by remember { mutableStateOf(false) }
@@ -140,122 +161,183 @@ fun AdjustClipSheet(
                 )
             }
 
-            Spacer(Modifier.height(16.dp))
-            val rangeLabel = stringResource(R.string.clip_range_label)
-            RangeSlider(
-                value = startMs.toFloat()..endMs.toFloat(),
-                onValueChange = { range ->
-                    // 100 ms resolution: finer than anyone can place by finger, coarse enough to read.
-                    startMs = (range.start / 100).roundToLong() * 100
-                    endMs = ((range.endInclusive / 100).roundToLong() * 100).coerceAtMost(duration)
-                },
-                valueRange = 0f..duration.toFloat().coerceAtLeast(1f),
-                enabled = duration > 0,
-                colors = SliderDefaults.colors(
-                    thumbColor = MaterialTheme.colorScheme.primary,
-                    activeTrackColor = MaterialTheme.colorScheme.primary,
-                    inactiveTrackColor = MaterialTheme.colorScheme.outlineVariant,
-                ),
-                modifier = Modifier.semantics { contentDescription = rangeLabel },
-            )
-            Text(
-                text = stringResource(R.string.clip_length, formatClipTime((endMs - startMs).coerceAtLeast(0))),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            Spacer(Modifier.height(16.dp))
-            BoundRow(
-                label = stringResource(R.string.clip_start),
-                valueMs = startMs,
-                minusDescription = stringResource(R.string.clip_start_minus),
-                plusDescription = stringResource(R.string.clip_start_plus),
-                onMinus = { startMs = (startMs - STEP_MS).coerceAtLeast(0) },
-                onPlus = { startMs = (startMs + STEP_MS).coerceAtMost(duration) },
-            )
-            BoundRow(
-                label = stringResource(R.string.clip_end),
-                valueMs = endMs,
-                minusDescription = stringResource(R.string.clip_end_minus),
-                plusDescription = stringResource(R.string.clip_end_plus),
-                onMinus = { endMs = (endMs - STEP_MS).coerceAtLeast(0) },
-                onPlus = { endMs = (endMs + STEP_MS).coerceAtMost(duration) },
-            )
-
             Spacer(Modifier.height(12.dp))
-            Text(
-                text = position?.let { stringResource(R.string.clip_position, formatClipTime(it)) }
-                    ?: stringResource(R.string.clip_position_unavailable),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            ModeOption(
+                selected = mode == SheetMode.Global,
+                title = stringResource(R.string.clip_mode_global),
+                detail = globalDescription(global, duration),
+                onClick = { mode = SheetMode.Global },
             )
-            // Same height for both, even when one label wraps to two lines.
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(IntrinsicSize.Min),
-            ) {
-                OutlinedButton(
-                    onClick = { positionNow()?.let { startMs = it } },
-                    enabled = position != null,
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
-                ) { Text(stringResource(R.string.clip_set_start_here), textAlign = TextAlign.Center) }
-                OutlinedButton(
-                    onClick = { positionNow()?.let { endMs = it } },
-                    enabled = position != null,
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
-                ) { Text(stringResource(R.string.clip_set_end_here), textAlign = TextAlign.Center) }
-            }
+            ModeOption(
+                selected = mode == SheetMode.Custom,
+                title = stringResource(R.string.clip_mode_custom),
+                detail = null,
+                onClick = { mode = SheetMode.Custom },
+            )
+            ModeOption(
+                selected = mode == SheetMode.Full,
+                title = stringResource(R.string.clip_mode_full),
+                detail = stringResource(R.string.clip_mode_full_detail),
+                onClick = { mode = SheetMode.Full },
+            )
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                if (preview.isPlaying) {
-                    OutlinedButton(onClick = preview::stop, modifier = Modifier.weight(1f)) {
-                        Text(stringResource(R.string.clip_preview_stop))
-                    }
-                } else {
+            if (mode == SheetMode.Custom) {
+                Spacer(Modifier.height(16.dp))
+                val rangeLabel = stringResource(R.string.clip_range_label)
+                RangeSlider(
+                    value = startMs.toFloat()..endMs.toFloat(),
+                    onValueChange = { range ->
+                        // 100 ms resolution: finer than anyone can place by finger, coarse enough to read.
+                        startMs = (range.start / 100).roundToLong() * 100
+                        endMs = ((range.endInclusive / 100).roundToLong() * 100).coerceAtMost(duration)
+                    },
+                    valueRange = 0f..duration.toFloat().coerceAtLeast(1f),
+                    enabled = duration > 0,
+                    colors = SliderDefaults.colors(
+                        thumbColor = MaterialTheme.colorScheme.primary,
+                        activeTrackColor = MaterialTheme.colorScheme.primary,
+                        inactiveTrackColor = MaterialTheme.colorScheme.outlineVariant,
+                    ),
+                    modifier = Modifier.semantics { contentDescription = rangeLabel },
+                )
+                Text(
+                    text = stringResource(R.string.clip_length, formatClipTime((endMs - startMs).coerceAtLeast(0))),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                Spacer(Modifier.height(16.dp))
+                BoundRow(
+                    label = stringResource(R.string.clip_start),
+                    valueMs = startMs,
+                    minusDescription = stringResource(R.string.clip_start_minus),
+                    plusDescription = stringResource(R.string.clip_start_plus),
+                    onMinus = { startMs = (startMs - STEP_MS).coerceAtLeast(0) },
+                    onPlus = { startMs = (startMs + STEP_MS).coerceAtMost(duration) },
+                )
+                BoundRow(
+                    label = stringResource(R.string.clip_end),
+                    valueMs = endMs,
+                    minusDescription = stringResource(R.string.clip_end_minus),
+                    plusDescription = stringResource(R.string.clip_end_plus),
+                    onMinus = { endMs = (endMs - STEP_MS).coerceAtLeast(0) },
+                    onPlus = { endMs = (endMs + STEP_MS).coerceAtMost(duration) },
+                )
+
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = position?.let { stringResource(R.string.clip_position, formatClipTime(it)) }
+                        ?: stringResource(R.string.clip_position_unavailable),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                // Same height for both, even when one label wraps to two lines.
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(IntrinsicSize.Min),
+                ) {
                     OutlinedButton(
-                        onClick = {
-                            usedPreview = true
-                            preview.play(track.contentUri, startMs, minOf(startMs + PREVIEW_MS, endMs))
-                        },
-                        enabled = validation == ClipValidation.Valid,
-                        modifier = Modifier.weight(1f),
-                    ) { Text(stringResource(R.string.clip_preview_start)) }
+                        onClick = { positionNow()?.let { startMs = it } },
+                        enabled = position != null,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                    ) { Text(stringResource(R.string.clip_set_start_here), textAlign = TextAlign.Center) }
                     OutlinedButton(
-                        onClick = {
-                            usedPreview = true
-                            preview.play(track.contentUri, maxOf(endMs - PREVIEW_MS, startMs), endMs)
-                        },
-                        enabled = validation == ClipValidation.Valid,
-                        modifier = Modifier.weight(1f),
-                    ) { Text(stringResource(R.string.clip_preview_end)) }
+                        onClick = { positionNow()?.let { endMs = it } },
+                        enabled = position != null,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                    ) { Text(stringResource(R.string.clip_set_end_here), textAlign = TextAlign.Center) }
                 }
-            }
 
-            validationMessage(validation)?.let { message ->
-                Spacer(Modifier.height(8.dp))
-                Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    if (preview.isPlaying) {
+                        OutlinedButton(onClick = preview::stop, modifier = Modifier.weight(1f)) {
+                            Text(stringResource(R.string.clip_preview_stop))
+                        }
+                    } else {
+                        OutlinedButton(
+                            onClick = {
+                                usedPreview = true
+                                preview.play(track.contentUri, startMs, minOf(startMs + PREVIEW_MS, endMs))
+                            },
+                            enabled = validation == ClipValidation.Valid,
+                            modifier = Modifier.weight(1f),
+                        ) { Text(stringResource(R.string.clip_preview_start)) }
+                        OutlinedButton(
+                            onClick = {
+                                usedPreview = true
+                                preview.play(track.contentUri, maxOf(endMs - PREVIEW_MS, startMs), endMs)
+                            },
+                            enabled = validation == ClipValidation.Valid,
+                            modifier = Modifier.weight(1f),
+                        ) { Text(stringResource(R.string.clip_preview_end)) }
+                    }
+                }
+
+                validationMessage(validation)?.let { message ->
+                    Spacer(Modifier.height(8.dp))
+                    Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+                }
+
             }
 
             Spacer(Modifier.height(16.dp))
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                TextButton(onClick = onReset, enabled = stored != null) {
-                    Text(stringResource(R.string.clip_reset))
-                }
                 Spacer(Modifier.weight(1f))
                 TextButton(onClick = onDismiss) { Text(stringResource(R.string.clip_cancel)) }
                 Button(
-                    onClick = { onSave(TrackClip(startMs, endMs)) },
-                    enabled = validation == ClipValidation.Valid,
+                    onClick = {
+                        when (mode) {
+                            SheetMode.Global -> onUseGlobal()
+                            SheetMode.Custom -> onSave(TrackClip(startMs, endMs))
+                            SheetMode.Full -> onFull()
+                        }
+                    },
+                    enabled = mode != SheetMode.Custom || validation == ClipValidation.Valid,
                 ) { Text(stringResource(R.string.clip_save)) }
             }
         }
     }
+}
+
+private enum class SheetMode { Global, Custom, Full }
+
+@Composable
+private fun ModeOption(selected: Boolean, title: String, detail: String?, onClick: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+            .heightIn(min = 48.dp)
+            .padding(vertical = 4.dp),
+    ) {
+        RadioButton(selected = selected, onClick = null)
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
+            if (detail != null) {
+                Text(detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+/** What "use the global rule" does for this track, in words. */
+@Composable
+private fun globalDescription(global: GlobalClipRule, durationMs: Long): String {
+    if (!global.isActive) return stringResource(R.string.clip_mode_global_off)
+    val clip = globalClip(global, durationMs) ?: return stringResource(R.string.clip_mode_global_too_short)
+    return stringResource(
+        R.string.clip_mode_global_range,
+        formatClipTime(clip.startMs),
+        formatClipTime(clip.endMs ?: durationMs),
+    )
 }
 
 @Composable
@@ -302,7 +384,8 @@ private fun validationMessage(validation: ClipValidation): String? = when (valid
 /** Small scissors badge for tracks with a clip; error-coloured when the clip no longer fits. */
 @Composable
 fun ClipBadge(clip: ResolvedClip?, modifier: Modifier = Modifier) {
-    if (clip == null) return
+    // Only custom clips are flagged in lists; "always whole file" changes nothing visible there.
+    if (clip == null || clip.mode == ClipMode.Full) return
     Icon(
         painter = painterResource(R.drawable.ic_content_cut),
         contentDescription = stringResource(if (clip.isValid) R.string.clip_active else R.string.clip_invalid),

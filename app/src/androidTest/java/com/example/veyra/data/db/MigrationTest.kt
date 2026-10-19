@@ -5,6 +5,7 @@ import androidx.room.testing.MigrationTestHelper
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.example.veyra.data.clips.ClipMode
 import com.example.veyra.data.clips.TrackClip
 import com.example.veyra.data.media.TrackKey
 import kotlinx.coroutines.flow.first
@@ -41,7 +42,7 @@ class MigrationTest {
             ApplicationProvider.getApplicationContext(),
             VeyraDatabase::class.java,
             dbName,
-        ).addMigrations(VeyraDatabase.MIGRATION_1_2).build()
+        ).addMigrations(VeyraDatabase.MIGRATION_1_2, VeyraDatabase.MIGRATION_2_3).build()
         try {
             val playlists = db.playlistDao().observePlaylists().first()
             assertEquals(listOf("Treino"), playlists.map { it.name })
@@ -56,6 +57,37 @@ class MigrationTest {
 
             settings.replace(listOf(stored.rowId), null) // reset
             assertEquals(0, settings.observeAll().first().size)
+        } finally {
+            db.close()
+        }
+    }
+
+    @Test
+    fun migrate2To3_keepsClipsAsCustom_andStoresFullMode() = runTest {
+        helper.createDatabase(dbName, 2).apply {
+            execSQL(
+                "INSERT INTO track_settings (id, media_store_id, relative_path, display_name, size_bytes, " +
+                    "duration_ms, start_ms, end_ms, updated_at) VALUES (1, 42, 'Music/', 'song.mp3', 3000, 180000, 5000, 170000, 7)",
+            )
+            close()
+        }
+
+        // Validates the migrated schema against app/schemas/.../3.json.
+        helper.runMigrationsAndValidate(dbName, 3, true, VeyraDatabase.MIGRATION_2_3).close()
+
+        val db = Room.databaseBuilder(ApplicationProvider.getApplicationContext(), VeyraDatabase::class.java, dbName)
+            .addMigrations(VeyraDatabase.MIGRATION_1_2, VeyraDatabase.MIGRATION_2_3)
+            .build()
+        try {
+            val settings = db.trackSettingsDao()
+            val existing = settings.observeAll().first().single().toStoredClip()
+            assertEquals(ClipMode.Custom, existing.mode)
+            assertEquals(TrackClip(5_000, 170_000), existing.clip)
+
+            val key = TrackKey(43, "Music/", "other.mp3", 1000, 90_000)
+            settings.replace(emptyList(), TrackSettingsEntity.from(key, TrackClip(0, null), now = 8, mode = ClipMode.Full))
+            val full = settings.observeAll().first().map { it.toStoredClip() }.single { it.key == key }
+            assertEquals(ClipMode.Full, full.mode)
         } finally {
             db.close()
         }

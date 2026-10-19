@@ -15,10 +15,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * History:
  * 1. Playlists and their entries (Phase 6).
  * 2. track_settings: per-track start/end clip (Phase 7).
+ * 3. track_settings.mode: "Custom" clip or "Full" (always the whole file) (Phase 9).
  */
 @Database(
     entities = [PlaylistEntity::class, PlaylistTrackEntity::class, TrackSettingsEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class VeyraDatabase : RoomDatabase() {
@@ -52,6 +53,13 @@ abstract class VeyraDatabase : RoomDatabase() {
             }
         }
 
+        /** Adds track_settings.mode; existing rows are custom clips. Matches app/schemas/.../3.json. */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `track_settings` ADD COLUMN `mode` TEXT NOT NULL DEFAULT 'Custom'")
+            }
+        }
+
         @Volatile
         private var instance: VeyraDatabase? = null
 
@@ -59,7 +67,7 @@ abstract class VeyraDatabase : RoomDatabase() {
         fun get(context: Context): VeyraDatabase =
             instance ?: synchronized(this) {
                 instance ?: Room.databaseBuilder(context.applicationContext, VeyraDatabase::class.java, NAME)
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                     .also { instance = it }
             }

@@ -6,8 +6,12 @@ import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.AP
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.veyra.data.clips.ClipMode
+import com.example.veyra.data.clips.EffectiveClip
+import com.example.veyra.data.clips.GlobalClipRule
 import com.example.veyra.data.clips.ResolvedClip
 import com.example.veyra.data.clips.TrackClip
+import com.example.veyra.data.clips.effectiveClip
 import com.example.veyra.data.clips.resolveClips
 import com.example.veyra.data.db.TrackSettingsDao
 import com.example.veyra.data.db.TrackSettingsEntity
@@ -71,14 +75,26 @@ class PlayerViewModel(
             .flowOn(Dispatchers.Default)
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
+    /** The global start/end rule (Settings > Playback). */
+    val globalRule: StateFlow<GlobalClipRule> =
+        preferences.playback
+            .map { it.globalRule }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, GlobalClipRule())
+
+    /** What [track] plays with right now: its own setting, the global rule or the whole file. */
+    fun effectiveFor(track: Track): EffectiveClip =
+        effectiveClip(clips.value[track.id], globalRule.value, track.durationMs)
+
     init {
         connection.connect()
-        // A clip saved or reset while its track is queued (or playing) applies right away.
+        // A clip saved or reset, or a change of the global rule, applies right away to the whole
+        // queue, current track included (it keeps playing at the same point of the file when
+        // that point is still inside the new range). One code path for every change.
         viewModelScope.launch {
-            clips.collect { resolved ->
+            combine(clips, globalRule) { resolved, global -> resolved to global }.collect { (resolved, global) ->
                 connection.syncClips(
                     trackFor = { mediaId -> mediaId.toLongOrNull()?.let { libraryById.value[it] } },
-                    clipFor = { track -> resolved[track.id]?.clip },
+                    clipFor = { track -> effectiveClip(resolved[track.id], global, track.durationMs).clip },
                 )
             }
         }
@@ -110,7 +126,7 @@ class PlayerViewModel(
     val errors: SharedFlow<PlaybackError> = connection.errors
 
     fun play(tracks: List<Track>, startIndex: Int, shuffle: Boolean? = null) =
-        connection.playQueue(tracks, startIndex, shuffle) { track -> clips.value[track.id]?.clip }
+        connection.playQueue(tracks, startIndex, shuffle) { track -> effectiveFor(track).clip }
 
     fun togglePlayPause() = connection.togglePlayPause()
     fun skipToNext() = connection.skipToNext()
@@ -123,20 +139,25 @@ class PlayerViewModel(
     fun absolutePositionMs(): Long? = connection.absolutePositionMs()
 
     /**
-     * Stores [clip] for [track], replacing any previous rows for it. A clip equal to the
-     * default (start 0, natural end) removes the setting instead.
+     * Stores a custom [clip] for [track], replacing any previous rows for it. A custom clip
+     * covering the whole file (start 0, natural end) is stored as "always the whole file".
      */
     fun saveClip(track: Track, clip: TrackClip) {
         val normalized = if (clip.endMs == track.durationMs) clip.copy(endMs = null) else clip
+        if (normalized.isDefault) return setFullTrack(track)
+        replaceSetting(track, TrackSettingsEntity.from(track.toTrackKey(), normalized, clock(), ClipMode.Custom))
+    }
+
+    /** "Always play the whole file": ignores the global rule for this track. */
+    fun setFullTrack(track: Track) =
+        replaceSetting(track, TrackSettingsEntity.from(track.toTrackKey(), TrackClip(0, null), clock(), ClipMode.Full))
+
+    private fun replaceSetting(track: Track, replacement: TrackSettingsEntity) {
         val previousRows = clips.value[track.id]?.rowIds.orEmpty()
-        val replacement = if (normalized.isDefault) {
-            null
-        } else {
-            TrackSettingsEntity.from(track.toTrackKey(), normalized, clock())
-        }
         viewModelScope.launch { settingsDao.replace(previousRows, replacement) }
     }
 
+    /** Back to the default: the track follows the global rule. */
     fun resetClip(track: Track) {
         val previousRows = clips.value[track.id]?.rowIds.orEmpty()
         if (previousRows.isEmpty()) return

@@ -9,6 +9,12 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.veyra.data.audio.BASS_STRENGTH_MAX
+import com.example.veyra.data.audio.CUSTOM_PRESET
+import com.example.veyra.data.audio.EqualizerSettings
+import com.example.veyra.data.audio.decodeLevels
+import com.example.veyra.data.audio.encodeLevels
+import com.example.veyra.data.clips.GlobalClipRule
 import com.example.veyra.data.media.TrackSort
 import com.example.veyra.playback.RepeatMode
 import kotlinx.coroutines.flow.Flow
@@ -30,6 +36,23 @@ data class LibraryPreferences(
 )
 
 data class PlaybackModes(val shuffle: Boolean = false, val repeat: RepeatMode = RepeatMode.Off)
+
+/** Settings > Playback. Each "skip" has its own switch so the chosen seconds are kept when off. */
+data class PlaybackPreferences(
+    val skipStartEnabled: Boolean = false,
+    val skipStartSeconds: Int = DEFAULT_GLOBAL_SKIP_SECONDS,
+    val skipEndEnabled: Boolean = false,
+    val skipEndSeconds: Int = DEFAULT_GLOBAL_SKIP_SECONDS,
+    val skipSilence: Boolean = false,
+) {
+    val globalRule: GlobalClipRule
+        get() = GlobalClipRule(
+            skipStartMs = if (skipStartEnabled) skipStartSeconds * 1_000L else 0,
+            skipEndMs = if (skipEndEnabled) skipEndSeconds * 1_000L else 0,
+        )
+}
+
+const val DEFAULT_GLOBAL_SKIP_SECONDS = 10
 
 /**
  * Folders excluded by default. They hold voice recordings and voice notes, which MediaStore
@@ -81,6 +104,46 @@ class AppPreferences private constructor(private val store: DataStore<Preference
         }
         .distinctUntilChanged()
 
+    val playback: Flow<PlaybackPreferences> = store.data
+        .map { prefs ->
+            PlaybackPreferences(
+                skipStartEnabled = prefs[KEY_SKIP_START_ON] ?: false,
+                skipStartSeconds = prefs[KEY_SKIP_START_S] ?: DEFAULT_GLOBAL_SKIP_SECONDS,
+                skipEndEnabled = prefs[KEY_SKIP_END_ON] ?: false,
+                skipEndSeconds = prefs[KEY_SKIP_END_S] ?: DEFAULT_GLOBAL_SKIP_SECONDS,
+                skipSilence = prefs[KEY_SKIP_SILENCE] ?: false,
+            )
+        }
+        .distinctUntilChanged()
+
+    val equalizer: Flow<EqualizerSettings> = store.data
+        .map { prefs ->
+            EqualizerSettings(
+                enabled = prefs[KEY_EQ_ON] ?: false,
+                preset = prefs[KEY_EQ_PRESET] ?: CUSTOM_PRESET,
+                bandLevels = decodeLevels(prefs[KEY_EQ_LEVELS]),
+                bassBoostEnabled = prefs[KEY_BASS_ON] ?: false,
+                bassStrength = (prefs[KEY_BASS_STRENGTH] ?: 500).coerceIn(0, BASS_STRENGTH_MAX),
+            )
+        }
+        .distinctUntilChanged()
+
+    suspend fun setPlayback(playback: PlaybackPreferences) = store.edit {
+        it[KEY_SKIP_START_ON] = playback.skipStartEnabled
+        it[KEY_SKIP_START_S] = playback.skipStartSeconds
+        it[KEY_SKIP_END_ON] = playback.skipEndEnabled
+        it[KEY_SKIP_END_S] = playback.skipEndSeconds
+        it[KEY_SKIP_SILENCE] = playback.skipSilence
+    }
+
+    suspend fun setEqualizer(settings: EqualizerSettings) = store.edit {
+        it[KEY_EQ_ON] = settings.enabled
+        it[KEY_EQ_PRESET] = settings.preset
+        it[KEY_EQ_LEVELS] = encodeLevels(settings.bandLevels)
+        it[KEY_BASS_ON] = settings.bassBoostEnabled
+        it[KEY_BASS_STRENGTH] = settings.bassStrength
+    }
+
     suspend fun setSort(sort: TrackSort) = store.edit { it[KEY_SORT] = sort.name }
 
     suspend fun setExcludedFolders(folders: Set<String>) = store.edit { it[KEY_EXCLUDED_FOLDERS] = folders }
@@ -104,6 +167,16 @@ class AppPreferences private constructor(private val store: DataStore<Preference
         private val KEY_DEVICE_IMAGES = booleanPreferencesKey("artwork_device_images")
         private val KEY_SHUFFLE = booleanPreferencesKey("playback_shuffle")
         private val KEY_REPEAT = stringPreferencesKey("playback_repeat")
+        private val KEY_SKIP_START_ON = booleanPreferencesKey("global_skip_start_on")
+        private val KEY_SKIP_START_S = intPreferencesKey("global_skip_start_s")
+        private val KEY_SKIP_END_ON = booleanPreferencesKey("global_skip_end_on")
+        private val KEY_SKIP_END_S = intPreferencesKey("global_skip_end_s")
+        private val KEY_SKIP_SILENCE = booleanPreferencesKey("skip_silence")
+        private val KEY_EQ_ON = booleanPreferencesKey("eq_enabled")
+        private val KEY_EQ_PRESET = intPreferencesKey("eq_preset")
+        private val KEY_EQ_LEVELS = stringPreferencesKey("eq_band_levels_mb")
+        private val KEY_BASS_ON = booleanPreferencesKey("bass_boost_enabled")
+        private val KEY_BASS_STRENGTH = intPreferencesKey("bass_boost_strength")
 
         @Volatile
         private var instance: AppPreferences? = null

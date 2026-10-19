@@ -22,7 +22,15 @@ import com.example.veyra.MainActivity
 import com.example.veyra.R
 import com.example.veyra.data.media.ArtworkLoader
 import com.example.veyra.data.media.ArtworkSize
+import com.example.veyra.data.settings.AppPreferences
 import com.google.common.util.concurrent.MoreExecutors
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.Executors
 
@@ -83,8 +91,32 @@ class PlaybackService : MediaSessionService() {
             override fun onRepeatModeChanged(repeatMode: Int) =
                 session.setMediaButtonPreferences(modeButtons.buttonsFor(player))
         })
+        attachSettings(player)
         // Also covers a service restarted by the system with an empty player.
         scheduleIdleStop()
+    }
+
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val audioEffects by lazy { AudioEffectsController(this) }
+
+    /**
+     * Applies the stored sound settings to the player and keeps them applied: skip silence, and
+     * the equalizer / bass boost on the player's audio session, recreated when the session id
+     * changes (ExoPlayer generates it asynchronously after creation).
+     */
+    @OptIn(UnstableApi::class) // audioSessionId, onAudioSessionIdChanged
+    private fun attachSettings(player: ExoPlayer) {
+        val preferences = AppPreferences.get(this)
+        if (player.audioSessionId != C.AUDIO_SESSION_ID_UNSET) audioEffects.onSessionId(player.audioSessionId)
+        player.addListener(object : Player.Listener {
+            override fun onAudioSessionIdChanged(audioSessionId: Int) = audioEffects.onSessionId(audioSessionId)
+        })
+        serviceScope.launch { preferences.equalizer.collect(audioEffects::update) }
+        serviceScope.launch {
+            preferences.playback.map { it.skipSilence }.distinctUntilChanged().collect {
+                player.skipSilenceEnabled = it
+            }
+        }
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = mediaSession
@@ -102,6 +134,8 @@ class PlaybackService : MediaSessionService() {
     override fun onDestroy() {
         idleHandler.removeCallbacks(stopWhenIdle)
         artworkExecutor.shutdownNow()
+        serviceScope.cancel()
+        audioEffects.release()
         mediaSession?.run {
             player.release()
             release()

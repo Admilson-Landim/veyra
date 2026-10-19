@@ -100,7 +100,6 @@
     <string name="clip_preview_start">Ouvir início</string>
     <string name="clip_preview_end">Ouvir fim</string>
     <string name="clip_preview_stop">Parar</string>
-    <string name="clip_reset">Repor padrão</string>
     <string name="clip_save">Guardar</string>
     <string name="clip_cancel">Cancelar</string>
     <string name="clip_error_negative">O início não pode ser negativo.</string>
@@ -109,6 +108,15 @@
     <string name="clip_error_beyond">O fim não pode passar da duração da faixa.</string>
     <string name="clip_error_unknown_duration">A duração desta faixa é desconhecida.</string>
     <string name="clip_stored_invalid">O recorte guardado (%1$s–%2$s) já não cabe neste ficheiro e está a ser ignorado. Ajusta e guarda, ou repõe o padrão.</string>
+    <string name="clip_mode_global">Usar a regra global (padrão)</string>
+    <string name="clip_mode_global_off">A regra global está desligada: toca a faixa completa.</string>
+    <string name="clip_mode_global_too_short">Faixa curta demais para a regra global: toca completa.</string>
+    <string name="clip_mode_global_range">Toca de %1$s a %2$s.</string>
+    <string name="clip_mode_custom">Recorte personalizado</string>
+    <string name="clip_mode_full">Tocar sempre a faixa completa</string>
+    <string name="clip_mode_full_detail">Ignora a regra global para esta faixa.</string>
+    <string name="player_rule_global">Regra global %1$s–%2$s</string>
+    <string name="player_rule_full">Faixa completa (sem regra global)</string>
     <string name="clip_saved">Recorte guardado.</string>
     <string name="clip_reset_done">Recorte removido.</string>
 
@@ -173,4 +181,28 @@
     <string name="settings_min_duration_minus">Menos 5 segundos</string>
     <string name="settings_min_duration_plus">Mais 5 segundos</string>
     <string name="settings_close">Fechar</string>
+
+    <string name="settings_section_playback">Reprodução</string>
+    <string name="settings_skip_start">Saltar o início de cada faixa</string>
+    <string name="settings_skip_start_detail">Começar %1$d segundos depois do início.</string>
+    <string name="settings_skip_end">Avançar antes do fim</string>
+    <string name="settings_skip_end_detail">Passar à faixa seguinte %1$d segundos antes do fim.</string>
+    <string name="settings_global_note">Aplica-se a faixas sem recorte próprio, quando restam pelo menos %1$d segundos. Nunca altera os ficheiros.</string>
+    <string name="settings_seconds_minus">Menos 5 segundos</string>
+    <string name="settings_seconds_plus">Mais 5 segundos</string>
+    <string name="settings_skip_silence">Saltar silêncio</string>
+    <string name="settings_skip_silence_detail">Acelera as partes silenciosas das faixas.</string>
+
+    <string name="settings_section_sound">Som</string>
+    <string name="eq_title">Equalizador</string>
+    <string name="eq_unsupported">Este dispositivo não disponibiliza um equalizador para apps.</string>
+    <string name="eq_loading">A ler o equalizador do dispositivo…</string>
+    <string name="eq_preset">Predefinição</string>
+    <string name="eq_preset_custom">Personalizada</string>
+    <string name="eq_band">Banda %1$s</string>
+    <string name="eq_bass_boost">Reforço de graves</string>
+    <string name="eq_bass_strength">Intensidade dos graves</string>
+    <string name="eq_reset">Repor valores</string>
+    <string name="eq_system_panel">Abrir efeitos de som do sistema</string>
+    <string name="eq_vendor_note">Alguns fabricantes aplicam os seus próprios efeitos de som, que podem ignorar ou substituir os do Veyra.</string>
 </resources>
