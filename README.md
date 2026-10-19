@@ -1,61 +1,124 @@
+<div align="center">
+
 # Veyra
 
 **Your Music, Your Way.**
 
-Veyra is a minimalist Android music player for the audio files stored on your device. No accounts,
-no ads, no streaming and no internet connection: your music, playlists and settings never leave
-the phone.
+A minimalist, private music player for the audio files on your Android device.
+
+![Platform](https://img.shields.io/badge/platform-Android%207.0%2B-17181C?style=flat-square)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.2-D8C8A4?style=flat-square)
+![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-D8C8A4?style=flat-square)
+![Media3](https://img.shields.io/badge/Media3-1.11-D8C8A4?style=flat-square)
+![Version](https://img.shields.io/badge/version-1.0-17181C?style=flat-square)
+
+</div>
+
+---
+
+Veyra plays the music already on your phone. There are no accounts, no ads, no streaming and no
+network access at all: your library, playlists and settings never leave the device.
+
+What sets it apart is **control over where each song starts and ends**. Trim the long intro of
+one track, end another before its fade-out, or apply one global rule to the whole library — the
+audio files themselves are never modified.
+
+## Contents
+
+- [Highlights](#highlights)
+- [Features](#features)
+- [Privacy](#privacy)
+- [Permissions](#permissions)
+- [Requirements](#requirements)
+- [Build and run](#build-and-run)
+- [Release signing](#release-signing)
+- [Architecture](#architecture)
+- [Testing](#testing)
+- [Project structure](#project-structure)
+- [Roadmap](#roadmap)
+- [Resumo em português](#resumo-em-português)
+
+## Highlights
+
+- **Per-track start and end** with a range slider, ±1 s fine tuning, "set here" from the current
+  position and short previews of the start and the end.
+- **Global start/end rule** ("skip the first X seconds", "move on X seconds before the end") with
+  a clear priority: *track setting › global rule › whole file*, and protection for short tracks.
+- **Reliable background playback** built on Media3: media notification, lock screen, headset and
+  Bluetooth buttons, pause when headphones are unplugged.
+- **Covers even when files have none**: embedded art, an image next to the file, a folder cover or
+  a VidMate thumbnail, with automatic removal of letterbox bars.
+- **Premium dark design** with a matching light theme, in English and Portuguese.
 
 ## Features
 
-- **Library** from MediaStore: play all / shuffle, sort by title, artist, album, date added or
-  length; recordings, voice notes, ringtones and podcasts are excluded; editable excluded folders
-  and an optional "hide short tracks" filter.
-- **Playback** with Media3: background playback, media notification and lock screen controls,
-  headset and Bluetooth buttons, pause when headphones are unplugged, shuffle and repeat
-  (also from the notification), swipe the cover or mini-player to change track.
-- **Covers**: embedded artwork, or a separate image next to the file (same name, folder cover,
-  VidMate thumbnail), or the default Veyra cover.
-- **Playlists** stored with Room: create, rename, delete, reorder, play all or from a track;
-  tracks that disappear are marked unavailable and skipped.
-- **Custom start and end** per track, and a **global rule** ("skip the first X s" /
-  "move on X s before the end") with priority *track > global > whole file*. Files are never
-  changed.
-- **Track options**: properties (format, bitrate, sample rate…), set as ringtone, notification
-  or alarm sound.
-- **Sound**: skip silence, equalizer with the device's own bands and presets, bass boost.
-- **Settings**: library, playback, sound, appearance (system / dark / light), language
-  (system / English / Português), about.
+| Area | What you get |
+|---|---|
+| **Library** | All music from MediaStore; play all / shuffle; sort by title, artist, album, recently added or length (accent- and case-insensitive); recordings, voice notes, ringtones, alarms and podcasts excluded; editable excluded folders; optional "hide short tracks". |
+| **Player** | Mini-player and full-screen player; play/pause, previous/next, seek, repeat (off / all / one), shuffle; swipe the cover or mini-player to change track; two-pane layout in landscape. |
+| **Background** | `MediaSessionService` with notification and lock-screen controls; shuffle and repeat buttons in the notification; headset and Bluetooth media buttons; audio focus (calls, other apps); wake lock while playing. |
+| **Covers** | Embedded artwork; same-name image, folder cover (`cover`, `folder`, `front`…) or VidMate thumbnail; default Veyra cover otherwise. Also shown in the notification. |
+| **Playlists** | Create, rename (no duplicates), delete with confirmation, reorder, remove, play all or from a track. Tracks that disappear are marked *unavailable* and skipped. |
+| **Start / end** | Per-track custom range, "always play the whole track", or follow the global rule. Invalid ranges (e.g. a shorter replacement file) are ignored and flagged, never a crash. |
+| **Track options** | Add to playlist, adjust start/end, properties (format, bitrate, sample rate, size, path, date added…), set as ringtone / notification / alarm sound. |
+| **Sound** | Skip silence; equalizer with the device's real bands and presets plus a custom preset; bass boost; system effects panel when available. |
+| **Settings** | Library, Playback, Sound, Appearance (system / dark / light), Language (system / English / Português), About. |
+| **Accessibility** | TalkBack labels and actions (including next/previous for the swipe gestures), touch targets ≥ 48 dp, large text up to 200%, contrast checked by tests. |
+
+A detailed, per-feature description (in Portuguese) is in [Funcionalidade.md](Funcionalidade.md).
+
+## Privacy
+
+- No accounts, no analytics, no ads.
+- No `INTERNET` permission: the app cannot send anything anywhere.
+- Playlists and per-track settings live in a local Room database; preferences in DataStore.
+
+## Permissions
+
+| Permission | Why |
+|---|---|
+| `READ_MEDIA_AUDIO` (Android 13+) / `READ_EXTERNAL_STORAGE` (≤ 12) | Read the music on the device. Asked from the Library, never at start-up. |
+| `READ_MEDIA_IMAGES` (Android 13+, optional) | Find covers stored as separate images. Asked only when that setting is turned on. |
+| `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PLAYBACK` | Keep playing in the background. |
+| `WAKE_LOCK` | Keep the CPU awake while playing with the screen off. |
+| `WRITE_SETTINGS` (special access) | Only to set a track as ringtone, notification or alarm sound; the user grants it in system settings. |
+| `ACCESS_NETWORK_STATE` | Added by the Media3 library, which reads the connection type for streaming heuristics. It cannot open connections; Veyra has no `INTERNET` permission. |
 
 ## Requirements
 
-- Android 7.0 (API 24) or newer.
-- To build: Android Studio with JDK 17+, Android SDK 37. The Gradle wrapper downloads Gradle 9.6.
+- **Device:** Android 7.0 (API 24) or newer.
+- **Build:** Android Studio (AGP 9.4), JDK 17+, Android SDK 37. The Gradle wrapper downloads
+  Gradle 9.6.
 
-## Building
+## Build and run
 
 ```bash
-./gradlew assembleDebug          # debug APK: app/build/outputs/apk/debug/
-./gradlew testDebugUnitTest      # JVM unit tests
-./gradlew connectedDebugAndroidTest  # instrumented tests (device or emulator)
-./gradlew lintDebug
-./gradlew assembleRelease        # minified release APK: app/build/outputs/apk/release/
+git clone git@github.com:Admilson-Landim/veyra.git
+cd veyra
+./gradlew assembleDebug        # app/build/outputs/apk/debug/app-debug.apk
+./gradlew installDebug         # install on a connected device
 ```
 
-### Release signing
+Or open the folder in Android Studio and press **Run**.
 
-Release builds are signed with a keystore described in `keystore.properties` at the project root.
-That file (and any `*.jks` / `*.keystore`) is git-ignored and must never be committed.
+## Release signing
 
-1. Create a keystore once, and keep it (and its passwords) in a safe place outside the project,
-   with a backup: losing it means you can no longer update the app.
+```bash
+./gradlew assembleRelease      # minified (R8) and resource-shrunk APK
+```
+
+Release builds are signed with the keystore described in `keystore.properties` at the project
+root. That file, `*.jks` and `*.keystore` are git-ignored and must never be committed.
+
+1. Create a keystore once and keep it, with its passwords, **outside the project and backed up** —
+   losing it means you can no longer publish updates.
 
    ```bash
    keytool -genkeypair -v -keystore ~/keys/veyra-release.jks -alias veyra \
        -keyalg RSA -keysize 4096 -validity 10000
    ```
 
-2. Create `keystore.properties` next to `settings.gradle.kts`:
+2. Create `keystore.properties`:
 
    ```properties
    storeFile=/home/you/keys/veyra-release.jks
@@ -68,34 +131,104 @@ Without `keystore.properties`, `assembleRelease` still builds, but the APK is un
 
 ## Architecture
 
-Single Gradle module, no dependency-injection framework. Kotlin, Jetpack Compose, Material 3,
-Coroutines/Flow.
+Single Gradle module, no dependency-injection framework, no navigation library: the app is small
+enough that plain constructors, `ViewModel` factories and saveable state stay readable.
 
-| Package | Role |
+```
+Compose UI ── ViewModels ── PlayerConnection ── MediaController
+                  │                                   │  (IPC)
+                  │                     PlaybackService (MediaSessionService)
+                  │                       └─ MediaSession ── ExoPlayer ── Equalizer / BassBoost
+                  ├─ MediaStore (tracks, images)
+                  ├─ Room (playlists, per-track settings)
+                  └─ DataStore (preferences)
+```
+
+Key decisions:
+
+- **The service owns the player.** The UI only talks to it through a `MediaController`, so
+  playback survives the activity and works from the notification and lock screen.
+- **One conversion point.** `Track.toMediaItem(clip)` is the only place a track becomes a
+  `MediaItem`; per-track and global start/end are applied there with `ClippingConfiguration`.
+- **Stable track identity.** `TrackKey` (MediaStore id + folder, file name, size, duration)
+  re-associates playlists and per-track settings after re-indexing, moves or re-tagging.
+- **Explicit migrations.** Room schemas are exported to `app/schemas`; there is no destructive
+  fallback.
+- **No IO on the main thread.** MediaStore, Room, image decoding and file reads run on
+  `Dispatchers.IO` / `Default`; `StrictMode` checks debug builds.
+
+| Stack | |
 |---|---|
-| `ui/theme` | Palette (Charcoal, Ivory, Champagne), dark and light schemes, typography, brand components |
-| `ui/library`, `ui/playlists`, `ui/player`, `ui/settings`, `ui/options`, `ui/clips` | Screens, sheets and their ViewModels |
-| `data/media` | MediaStore queries, `Track`, `TrackKey` (stable track identity), artwork loading |
-| `data/db` | Room: playlists and per-track settings, with explicit migrations (schemas in `app/schemas`) |
-| `data/settings` | DataStore preferences |
-| `data/clips` | Start/end rules: validation and priority (track > global > whole file) |
-| `data/audio` | Equalizer settings and device capabilities |
-| `playback` | `PlaybackService` (MediaSessionService with ExoPlayer), `PlayerConnection` (MediaController), the single `Track → MediaItem` conversion, audio effects |
+| Language | Kotlin 2.2, Coroutines / Flow |
+| UI | Jetpack Compose, Material 3 |
+| Playback | AndroidX Media3 1.11 (ExoPlayer, Session) |
+| Storage | Room 2.8 (KSP), DataStore Preferences 1.2 |
+| Localisation | AppCompat per-app languages (English, Portuguese) |
+| Build | Gradle Kotlin DSL, version catalog, R8 |
 
-The UI never touches the player directly: it talks to `PlaybackService` through a
-`MediaController`, so playback keeps running in the background.
+## Testing
+
+```bash
+./gradlew testDebugUnitTest            # JVM unit tests
+./gradlew connectedDebugAndroidTest    # instrumented tests (device or emulator)
+./gradlew lintDebug
+```
+
+- **Unit tests:** start/end validation and priority, `TrackKey` resolution, library sorting and
+  filters, artwork fallbacks and letterbox trimming, equalizer settings, property formatting,
+  ViewModels (library, playback queue requests), WCAG contrast of both themes.
+- **Instrumented tests:** playlist DAO, Room migrations 1 → 2 → 3 (`MigrationTestHelper`) and the
+  `Track → MediaItem` conversion.
+
+## Project structure
+
+```
+app/src/main/java/com/example/veyra/
+├── data/
+│   ├── audio/       equalizer settings and device capabilities
+│   ├── clips/       start/end model, validation and priority rules
+│   ├── db/          Room database, entities, DAOs, migrations
+│   ├── media/       MediaStore repository, Track, TrackKey, artwork loading
+│   ├── playlists/   playlist rules (names, ordering)
+│   └── settings/    DataStore preferences
+├── playback/        PlaybackService, PlayerConnection, MediaItem mapping, audio effects
+└── ui/
+    ├── clips/       start/end editor
+    ├── library/     library screen and ViewModel
+    ├── options/     track options and properties
+    ├── player/      mini-player, full player, gestures
+    ├── playlists/   playlists screens and dialogs
+    ├── settings/    settings screen and sections
+    └── theme/       palette, typography, shapes, brand components
+```
+
+## Roadmap
+
+Ideas for future versions (not implemented):
+
+- Restore the queue and position after the app is closed.
+- Search in the library; album, artist and folder views.
+- Fix badly encoded ID3 tags.
+- Drag-and-drop reordering in playlists.
+- Sleep timer.
+- Import / export playlists (M3U).
 
 ---
 
 ## Resumo em português
 
-O **Veyra** é um leitor de música Android minimalista para os ficheiros de áudio guardados no
-dispositivo. Sem contas, anúncios, streaming nem ligação à internet.
+O **Veyra** é um leitor de música Android minimalista e privado para os ficheiros de áudio do
+dispositivo. Sem contas, sem anúncios, sem streaming e sem acesso à internet.
 
-**Funcionalidades:** biblioteca com ordenação e exclusão de gravações; reprodução em segundo
-plano com notificação, ecrã bloqueado, auscultadores e Bluetooth; capas embebidas ou de imagens
-do dispositivo; playlists; início e fim por faixa e regra global; propriedades e definir como
-toque; saltar silêncio e equalizador; tema escuro e claro; inglês e português.
+O seu ponto forte é o **controlo do início e do fim de cada música**: recortar a introdução longa
+de uma faixa, terminar outra antes do fade-out, ou aplicar uma regra global a toda a biblioteca —
+sem nunca alterar os ficheiros.
+
+**Funcionalidades principais:** biblioteca com ordenação e exclusão de gravações; reprodução em
+segundo plano com notificação, ecrã bloqueado, auscultadores e Bluetooth; capas embebidas ou a
+partir de imagens do dispositivo; playlists; início e fim por faixa e regra global; propriedades e
+definir como toque; saltar silêncio, equalizador e reforço de graves; tema escuro e claro; inglês e
+português.
 
 **Requisitos:** Android 7.0 ou superior. Para compilar: Android Studio, JDK 17+ e SDK 37.
 
@@ -103,6 +236,4 @@ toque; saltar silêncio e equalizador; tema escuro e claro; inglês e português
 minificada, assinada com a keystore indicada em `keystore.properties`, que nunca vai para o
 repositório).
 
-**Arquitetura:** um único módulo; Compose na interface; Media3 num `MediaSessionService`
-controlado por `MediaController`; Room para playlists e configuração por faixa; DataStore para
-as preferências.
+A descrição detalhada de cada funcionalidade está em [Funcionalidade.md](Funcionalidade.md).
