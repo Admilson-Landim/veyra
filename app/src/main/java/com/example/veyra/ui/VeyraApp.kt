@@ -46,8 +46,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.veyra.R
+import com.example.veyra.data.clips.ResolvedClip
 import com.example.veyra.data.db.PlaylistSummary
 import com.example.veyra.data.media.Track
+import com.example.veyra.ui.clips.AdjustClipSheet
 import com.example.veyra.ui.library.AudioPermissionMonitor
 import com.example.veyra.ui.library.LibraryScreen
 import com.example.veyra.ui.library.LibraryUiState
@@ -81,14 +83,15 @@ private sealed interface NameRequest {
 fun VeyraApp(
     /** Each increment asks to show the full player (e.g. the notification was tapped). */
     openPlayerRequests: Int = 0,
-    playerViewModel: PlayerViewModel = viewModel(factory = PlayerViewModel.Factory),
     libraryViewModel: LibraryViewModel = viewModel(factory = LibraryViewModel.Factory),
+    playerViewModel: PlayerViewModel = viewModel(factory = PlayerViewModel.factory(libraryViewModel.uiState)),
     playlistsViewModel: PlaylistsViewModel = viewModel(factory = PlaylistsViewModel.factory(libraryViewModel.uiState)),
 ) {
     var destination by rememberSaveable { mutableStateOf(VeyraDestination.Library) }
     var playerOpen by rememberSaveable { mutableStateOf(false) }
     var openPlaylistId by rememberSaveable { mutableStateOf<Long?>(null) }
     var addToPlaylistTrack by remember { mutableStateOf<Track?>(null) }
+    var adjustClipTrack by remember { mutableStateOf<Track?>(null) }
     var nameRequest by remember { mutableStateOf<NameRequest?>(null) }
 
     LaunchedEffect(openPlayerRequests) {
@@ -103,6 +106,7 @@ fun VeyraApp(
     val playerState by playerViewModel.state.collectAsStateWithLifecycle()
     val libraryState by libraryViewModel.uiState.collectAsStateWithLifecycle()
     val playlists by playlistsViewModel.playlists.collectAsStateWithLifecycle()
+    val clips by playerViewModel.clips.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
     val scope = rememberCoroutineScope()
@@ -181,7 +185,9 @@ fun VeyraApp(
                                 LibraryScreen(
                                     currentMediaId = playerState.currentMediaId,
                                     onTrackClick = playerViewModel::play,
-                                    onTrackOptions = { addToPlaylistTrack = it },
+                                    onAddToPlaylist = { addToPlaylistTrack = it },
+                                    onAdjustClip = { adjustClipTrack = it },
+                                    clips = clips,
                                     viewModel = libraryViewModel,
                                     modifier = sectionModifier,
                                 )
@@ -195,6 +201,8 @@ fun VeyraApp(
                                     onPlay = playerViewModel::play,
                                     onCreate = { nameRequest = NameRequest.Create(thenAdd = null) },
                                     onRename = { id, name -> nameRequest = NameRequest.Rename(id, name) },
+                                    onAdjustClip = { adjustClipTrack = it },
+                                    clips = clips,
                                     modifier = sectionModifier,
                                 )
                             }
@@ -222,6 +230,8 @@ fun VeyraApp(
                 onClose = { playerOpen = false },
                 snackbarHostState = snackbarHostState,
                 onAddToPlaylist = currentTrack?.let { track -> { addToPlaylistTrack = track } },
+                onAdjustClip = currentTrack?.let { track -> { adjustClipTrack = track } },
+                clip = currentTrack?.let { clips[it.id] },
             )
         }
     }
@@ -239,6 +249,27 @@ fun VeyraApp(
                 nameRequest = NameRequest.Create(thenAdd = track)
             },
             onDismiss = { addToPlaylistTrack = null },
+        )
+    }
+
+    adjustClipTrack?.let { track ->
+        AdjustClipSheet(
+            track = track,
+            stored = clips[track.id],
+            mainPlayerPositionMs = {
+                if (playerState.currentMediaId == track.id.toString()) playerViewModel.absolutePositionMs() else null
+            },
+            onSave = { clip ->
+                adjustClipTrack = null
+                playerViewModel.saveClip(track, clip)
+                showMessage(resources.getString(R.string.clip_saved))
+            },
+            onReset = {
+                adjustClipTrack = null
+                playerViewModel.resetClip(track)
+                showMessage(resources.getString(R.string.clip_reset_done))
+            },
+            onDismiss = { adjustClipTrack = null },
         )
     }
 
@@ -281,6 +312,8 @@ private fun PlaylistsTab(
     onPlay: (List<Track>, Int) -> Unit,
     onCreate: () -> Unit,
     onRename: (playlistId: Long, currentName: String) -> Unit,
+    onAdjustClip: (Track) -> Unit,
+    clips: Map<Long, ResolvedClip>,
     modifier: Modifier = Modifier,
 ) {
     if (openPlaylistId == null) {
@@ -311,8 +344,10 @@ private fun PlaylistsTab(
                     onDelete = { confirmDelete = true },
                     onMove = { from, to -> viewModel.moveEntry(openPlaylistId, from, to) },
                     onRemove = { entryId -> viewModel.removeEntry(openPlaylistId, entryId) },
+                    onAdjustClip = onAdjustClip,
                 ),
                 modifier = modifier,
+                clips = clips,
             )
             if (confirmDelete) {
                 DeletePlaylistDialog(

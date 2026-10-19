@@ -1,7 +1,9 @@
 package com.example.veyra.playback
 
+import androidx.media3.common.C
 import androidx.media3.common.MediaMetadata
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.example.veyra.data.clips.TrackClip
 import com.example.veyra.data.media.Track
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -51,9 +53,31 @@ class MediaItemMappingTest {
     }
 
     @Test
-    fun noClippingUntilPhase7() {
+    fun withoutClip_playsWholeFile() {
         val clipping = track().toMediaItem().clippingConfiguration
         assertEquals(0L, clipping.startPositionMs)
-        assertEquals(Long.MIN_VALUE, clipping.endPositionMs)
+        assertEquals(C.TIME_END_OF_SOURCE, clipping.endPositionMs)
+    }
+
+    @Test
+    fun withClip_appliesStartAndEnd() {
+        val clipping = track().toMediaItem(TrackClip(30_000, 150_000)).clippingConfiguration
+        assertEquals(30_000L, clipping.startPositionMs)
+        assertEquals(150_000L, clipping.endPositionMs)
+    }
+
+    @Test
+    fun clipWithoutEnd_playsToNaturalEnd() {
+        val clipping = track().toMediaItem(TrackClip(30_000, null)).clippingConfiguration
+        assertEquals(30_000L, clipping.startPositionMs)
+        assertEquals(C.TIME_END_OF_SOURCE, clipping.endPositionMs)
+    }
+
+    @Test
+    fun invalidClip_isIgnored() {
+        // End beyond the 173 s duration: the file plays in full instead of failing.
+        val clipping = track().toMediaItem(TrackClip(30_000, 400_000)).clippingConfiguration
+        assertEquals(0L, clipping.startPositionMs)
+        assertEquals(C.TIME_END_OF_SOURCE, clipping.endPositionMs)
     }
 }

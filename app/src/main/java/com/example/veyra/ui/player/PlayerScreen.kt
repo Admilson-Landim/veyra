@@ -44,10 +44,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.veyra.R
+import com.example.veyra.data.clips.ResolvedClip
 import com.example.veyra.data.media.ArtworkSize
 import com.example.veyra.playback.PlayerState
 import com.example.veyra.playback.RepeatMode
 import com.example.veyra.playback.progressFraction
+import com.example.veyra.ui.clips.formatClipTime
 import com.example.veyra.ui.library.formatDuration
 import com.example.veyra.ui.theme.VeyraTheme
 import com.example.veyra.ui.theme.components.TrackArtwork
@@ -72,6 +74,10 @@ fun PlayerScreen(
     modifier: Modifier = Modifier,
     /** Null while the current track is not known in the library (the button is hidden). */
     onAddToPlaylist: (() -> Unit)? = null,
+    /** Same as [onAddToPlaylist], for the start/end editor. */
+    onAdjustClip: (() -> Unit)? = null,
+    /** The current track's clip, shown as a discreet line under the artist. */
+    clip: ResolvedClip? = null,
 ) {
     Surface(color = MaterialTheme.colorScheme.background, modifier = modifier.fillMaxSize()) {
         Box(Modifier.windowInsetsPadding(WindowInsets.safeDrawing)) {
@@ -94,6 +100,15 @@ fun PlayerScreen(
                             )
                         }
                         Spacer(Modifier.weight(1f))
+                        if (onAdjustClip != null) {
+                            IconButton(onClick = onAdjustClip) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_content_cut),
+                                    contentDescription = stringResource(R.string.clip_adjust),
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                )
+                            }
+                        }
                         if (onAddToPlaylist != null) {
                             IconButton(onClick = onAddToPlaylist) {
                                 Icon(
@@ -127,6 +142,24 @@ fun PlayerScreen(
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.fillMaxWidth(),
                         )
+                        if (clip != null) {
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = if (clip.isValid) {
+                                    stringResource(
+                                        R.string.clip_player_range,
+                                        formatClipTime(clip.clip.startMs),
+                                        clip.clip.endMs?.let(::formatClipTime) ?: formatDuration(state.durationMs + clip.clip.startMs),
+                                    )
+                                } else {
+                                    stringResource(R.string.clip_player_invalid)
+                                },
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (clip.isValid) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
                         Spacer(Modifier.height(24.dp))
                         SeekBar(state = state, onSeek = actions.onSeek)
                         Spacer(Modifier.height(16.dp))

@@ -27,6 +27,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +36,9 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -54,8 +59,10 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.veyra.R
+import com.example.veyra.data.clips.ResolvedClip
 import com.example.veyra.data.media.ArtworkSize
 import com.example.veyra.data.media.Track
+import com.example.veyra.ui.clips.ClipBadge
 import com.example.veyra.ui.theme.VeyraTheme
 import com.example.veyra.ui.theme.components.TrackArtwork
 import com.example.veyra.ui.theme.components.VeyraEmptyState
@@ -90,8 +97,10 @@ fun AudioPermissionMonitor(viewModel: LibraryViewModel) {
 fun LibraryScreen(
     currentMediaId: String?,
     onTrackClick: (tracks: List<Track>, index: Int) -> Unit,
-    onTrackOptions: (Track) -> Unit,
+    onAddToPlaylist: (Track) -> Unit,
+    onAdjustClip: (Track) -> Unit,
     modifier: Modifier = Modifier,
+    clips: Map<Long, ResolvedClip> = emptyMap(),
     viewModel: LibraryViewModel = viewModel(factory = LibraryViewModel.Factory),
 ) {
     val context = LocalContext.current
@@ -113,10 +122,17 @@ fun LibraryScreen(
         onRetry = viewModel::retry,
         currentMediaId = currentMediaId,
         onTrackClick = onTrackClick,
-        onTrackOptions = onTrackOptions,
+        trackActions = TrackRowActions(onAddToPlaylist, onAdjustClip),
+        clips = clips,
         modifier = modifier,
     )
 }
+
+/** What the options menu of a library row can do. */
+private data class TrackRowActions(
+    val onAddToPlaylist: (Track) -> Unit,
+    val onAdjustClip: (Track) -> Unit,
+)
 
 @Composable
 private fun LibraryContent(
@@ -126,7 +142,8 @@ private fun LibraryContent(
     onRetry: () -> Unit,
     currentMediaId: String?,
     onTrackClick: (tracks: List<Track>, index: Int) -> Unit,
-    onTrackOptions: (Track) -> Unit,
+    trackActions: TrackRowActions,
+    clips: Map<Long, ResolvedClip>,
     modifier: Modifier = Modifier,
 ) {
     VeyraSection(title = stringResource(R.string.library_title), modifier = modifier) {
@@ -154,7 +171,7 @@ private fun LibraryContent(
                 },
             )
 
-            is LibraryUiState.Content -> TrackList(state.tracks, currentMediaId, onTrackClick, onTrackOptions)
+            is LibraryUiState.Content -> TrackList(state.tracks, currentMediaId, onTrackClick, trackActions, clips)
         }
     }
 }
@@ -205,7 +222,8 @@ private fun TrackList(
     tracks: List<Track>,
     currentMediaId: String?,
     onTrackClick: (tracks: List<Track>, index: Int) -> Unit,
-    onTrackOptions: (Track) -> Unit,
+    trackActions: TrackRowActions,
+    clips: Map<Long, ResolvedClip>,
 ) {
     LazyColumn(
         contentPadding = PaddingValues(bottom = 16.dp),
@@ -225,14 +243,22 @@ private fun TrackList(
                 isCurrent = track.id.toString() == currentMediaId,
                 // The queue is the library as currently shown, starting at the tapped track.
                 onClick = { onTrackClick(tracks, index) },
-                onOptions = { onTrackOptions(track) },
+                clip = clips[track.id],
+                actions = trackActions,
             )
         }
     }
 }
 
 @Composable
-private fun TrackRow(track: Track, isCurrent: Boolean, onClick: () -> Unit, onOptions: () -> Unit) {
+private fun TrackRow(
+    track: Track,
+    isCurrent: Boolean,
+    onClick: () -> Unit,
+    clip: ResolvedClip?,
+    actions: TrackRowActions,
+) {
+    var menuOpen by rememberSaveable { mutableStateOf(false) }
     val nowPlaying = stringResource(R.string.track_now_playing)
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -267,17 +293,30 @@ private fun TrackRow(track: Track, isCurrent: Boolean, onClick: () -> Unit, onOp
             )
         }
         Spacer(Modifier.width(16.dp))
+        ClipBadge(clip, Modifier.padding(end = 8.dp))
         Text(
             text = formatDuration(track.durationMs),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        IconButton(onClick = onOptions) {
-            Icon(
-                painter = painterResource(R.drawable.ic_more_vert),
-                contentDescription = stringResource(R.string.track_options),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        Box {
+            IconButton(onClick = { menuOpen = true }) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_more_vert),
+                    contentDescription = stringResource(R.string.track_options),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.add_to_playlist)) },
+                    onClick = { menuOpen = false; actions.onAddToPlaylist(track) },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.clip_adjust)) },
+                    onClick = { menuOpen = false; actions.onAdjustClip(track) },
+                )
+            }
         }
     }
 }
@@ -303,7 +342,8 @@ private fun LibraryPermissionPreview() {
             onRetry = {},
             currentMediaId = "1",
             onTrackClick = { _, _ -> },
-            onTrackOptions = {},
+            trackActions = TrackRowActions({}, {}),
+            clips = emptyMap(),
         )
     }
 }
@@ -324,7 +364,8 @@ private fun LibraryContentPreview() {
             onRetry = {},
             currentMediaId = "1",
             onTrackClick = { _, _ -> },
-            onTrackOptions = {},
+            trackActions = TrackRowActions({}, {}),
+            clips = emptyMap(),
         )
     }
 }

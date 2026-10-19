@@ -40,8 +40,10 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.veyra.R
+import com.example.veyra.data.clips.ResolvedClip
 import com.example.veyra.data.media.ArtworkSize
 import com.example.veyra.data.media.Track
+import com.example.veyra.ui.clips.ClipBadge
 import com.example.veyra.ui.library.formatDuration
 import com.example.veyra.ui.theme.components.TrackArtwork
 import com.example.veyra.ui.theme.components.VeyraEmptyState
@@ -54,6 +56,7 @@ data class PlaylistDetailActions(
     val onDelete: () -> Unit,
     val onMove: (from: Int, to: Int) -> Unit,
     val onRemove: (entryId: Long) -> Unit,
+    val onAdjustClip: (Track) -> Unit,
 )
 
 @Composable
@@ -62,6 +65,7 @@ fun PlaylistDetailScreen(
     currentMediaId: String?,
     actions: PlaylistDetailActions,
     modifier: Modifier = Modifier,
+    clips: Map<Long, ResolvedClip> = emptyMap(),
 ) {
     val playable = state.playableTracks
     Column(modifier.fillMaxSize()) {
@@ -135,6 +139,8 @@ fun PlaylistDetailScreen(
                     onMoveUp = { actions.onMove(index, index - 1) },
                     onMoveDown = { actions.onMove(index, index + 1) },
                     onRemove = { actions.onRemove(item.entry.id) },
+                    clip = item.track?.let { clips[it.id] },
+                    onAdjustClip = item.track?.let { track -> { actions.onAdjustClip(track) } },
                 )
             }
         }
@@ -152,6 +158,9 @@ private fun EntryRow(
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
     onRemove: () -> Unit,
+    clip: ResolvedClip?,
+    /** Null for unavailable entries. */
+    onAdjustClip: (() -> Unit)?,
 ) {
     var menuOpen by rememberSaveable { mutableStateOf(false) }
     val unavailableLabel = stringResource(R.string.playlist_track_unavailable)
@@ -207,6 +216,7 @@ private fun EntryRow(
             }
             item.track?.let {
                 Spacer(Modifier.width(16.dp))
+                ClipBadge(clip, Modifier.padding(end = 8.dp))
                 Text(
                     text = formatDuration(it.durationMs),
                     style = MaterialTheme.typography.labelMedium,
@@ -233,6 +243,12 @@ private fun EntryRow(
                     enabled = canMoveDown,
                     onClick = { menuOpen = false; onMoveDown() },
                 )
+                if (onAdjustClip != null) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.clip_adjust)) },
+                        onClick = { menuOpen = false; onAdjustClip() },
+                    )
+                }
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.playlist_remove)) },
                     onClick = { menuOpen = false; onRemove() },
