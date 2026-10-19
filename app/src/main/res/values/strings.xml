@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="pt">
     <string name="app_name" translatable="false">Veyra</string>
     <string name="brand_slogan" translatable="false">Your Music, Your Way.</string>
 
@@ -7,8 +7,30 @@
     <string name="nav_settings">Definições</string>
 
     <string name="library_title">Biblioteca</string>
-    <string name="library_empty_title">Ainda não há músicas</string>
-    <string name="library_empty_message">A leitura das músicas guardadas no dispositivo chega numa próxima versão do Veyra.</string>
+    <string name="library_loading">A carregar a biblioteca</string>
+    <plurals name="library_track_count">
+        <item quantity="one">%d faixa</item>
+        <item quantity="many">%d de faixas</item>
+        <item quantity="other">%d faixas</item>
+    </plurals>
+    <string name="track_unknown_title">Sem título</string>
+    <string name="track_unknown_artist">Artista desconhecido</string>
+
+    <string name="library_permission_title">Dá acesso à tua música</string>
+    <string name="library_permission_message">O Veyra mostra os ficheiros de áudio guardados neste dispositivo. Nada sai do teu telemóvel.</string>
+    <string name="library_permission_denied_title">Acesso à música recusado</string>
+    <string name="library_permission_denied_message">Sem esta permissão, o Veyra não consegue mostrar as tuas músicas.</string>
+    <string name="library_permission_blocked_title">Acesso à música desativado</string>
+    <string name="library_permission_blocked_message">Para ver as tuas músicas, ativa a permissão de acesso a música e áudio nas definições da app.</string>
+    <string name="library_permission_action">Permitir acesso à música</string>
+    <string name="library_open_settings_action">Abrir definições</string>
+
+    <string name="library_empty_title">Nenhuma música encontrada</string>
+    <string name="library_empty_message">Copia ficheiros de áudio para o dispositivo, por exemplo para a pasta Music, e eles aparecem aqui automaticamente.</string>
+
+    <string name="library_error_title">Não foi possível ler a biblioteca</string>
+    <string name="library_error_message">Ocorreu um erro ao consultar as músicas do dispositivo.</string>
+    <string name="library_retry_action">Tentar novamente</string>
 
     <string name="playlists_title">Playlists</string>
     <string name="playlists_empty_title">Playlists em breve</string>
