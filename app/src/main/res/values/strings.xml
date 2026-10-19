@@ -49,9 +49,38 @@
     <string name="player_error_named">Não foi possível reproduzir \u201c%1$s\u201d.</string>
     <string name="player_error">Não foi possível reproduzir esta faixa.</string>
 
+    <string name="track_options">Opções da faixa</string>
+
     <string name="playlists_title">Playlists</string>
-    <string name="playlists_empty_title">Playlists em breve</string>
-    <string name="playlists_empty_message">A criação e organização de playlists ainda não está disponível.</string>
+    <string name="playlists_empty_title">Ainda não há playlists</string>
+    <string name="playlists_empty_message">Cria uma playlist e adiciona faixas a partir da Biblioteca ou do leitor.</string>
+    <string name="playlist_new">Nova playlist</string>
+    <string name="playlist_open_action">Abrir playlist</string>
+    <string name="playlist_back">Voltar às playlists</string>
+    <string name="playlist_play_all">Tocar tudo</string>
+    <string name="playlist_rename">Renomear</string>
+    <string name="playlist_delete">Apagar</string>
+    <string name="playlist_rename_title">Renomear playlist</string>
+    <string name="playlist_name_label">Nome</string>
+    <string name="playlist_create_action">Criar</string>
+    <string name="playlist_save_action">Guardar</string>
+    <string name="playlist_cancel_action">Cancelar</string>
+    <string name="playlist_name_empty">Escreve um nome.</string>
+    <string name="playlist_name_too_long">Máximo de %1$d caracteres.</string>
+    <string name="playlist_name_duplicate">Já existe uma playlist com este nome.</string>
+    <string name="playlist_delete_title">Apagar \u201c%1$s\u201d?</string>
+    <string name="playlist_delete_message">A playlist é apagada. As músicas continuam no dispositivo.</string>
+    <string name="playlist_empty_title">Playlist vazia</string>
+    <string name="playlist_empty_message">Adiciona faixas com o botão de opções na Biblioteca ou no leitor.</string>
+    <string name="playlist_entry_options">Opções da entrada</string>
+    <string name="playlist_move_up">Mover para cima</string>
+    <string name="playlist_move_down">Mover para baixo</string>
+    <string name="playlist_remove">Remover da playlist</string>
+    <string name="playlist_track_unavailable">Indisponível</string>
+    <string name="playlist_library_unavailable">Sem acesso à música do dispositivo. Dá acesso na Biblioteca para tocar esta playlist.</string>
+    <string name="add_to_playlist_title">Adicionar a playlist</string>
+    <string name="add_to_playlist">Adicionar a playlist</string>
+    <string name="added_to_playlist">Adicionada a \u201c%1$s\u201d.</string>
 
     <string name="settings_title">Definições</string>
     <string name="settings_empty_title">Definições em breve</string>

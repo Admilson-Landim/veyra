@@ -70,6 +70,8 @@ fun PlayerScreen(
     onClose: () -> Unit,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
+    /** Null while the current track is not known in the library (the button is hidden). */
+    onAddToPlaylist: (() -> Unit)? = null,
 ) {
     Surface(color = MaterialTheme.colorScheme.background, modifier = modifier.fillMaxSize()) {
         Box(Modifier.windowInsetsPadding(WindowInsets.safeDrawing)) {
@@ -90,6 +92,16 @@ fun PlayerScreen(
                                 contentDescription = stringResource(R.string.player_close),
                                 tint = MaterialTheme.colorScheme.onSurface,
                             )
+                        }
+                        Spacer(Modifier.weight(1f))
+                        if (onAddToPlaylist != null) {
+                            IconButton(onClick = onAddToPlaylist) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_playlist_add),
+                                    contentDescription = stringResource(R.string.add_to_playlist),
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                )
+                            }
                         }
                     }
                     Spacer(Modifier.height(16.dp))

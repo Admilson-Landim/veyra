@@ -34,7 +34,7 @@ Kotlin · Jetpack Compose · Material 3 · Media3 (ExoPlayer + Session) · Media
 - **Inspeciona antes de alterar.** Lê a estrutura, o Gradle, o manifest e o código existente antes de escrever. Começa cada fase com um resumo do estado atual e do plano.
 - **Uma fase de cada vez.** Não implementes nada de fases futuras. No fim, apresenta a validação e para.
 - **Dependências:** usa versões estáveis e compatíveis com as que já existem. Não atualizes AGP, Gradle, Kotlin ou outras dependências só para ter versões mais recentes. Se uma atualização for mesmo necessária, explica porquê e pergunta-me antes.
-- Todas as bibliotecas Media3 usam a mesma versão. O KSP tem de corresponder à versão do Kotlin do projeto.
+- Todas as bibliotecas Media3 usam a mesma versão. KSP: desde a 2.3.0 a numeração é independente do Kotlin; usar uma 2.3.x compatível com o AGP (o projeto usa o Kotlin integrado do AGP 9, que exige KSP ≥ 2.3.1).
 - **Sem abstração gratuita:** nada de Hilt/Koin, módulos Gradle extra, camadas de interfaces ou bibliotecas de navegação sem necessidade concreta. Se achares que algo é necessário, justifica e pergunta.
 - Nunca executes comandos destrutivos, apagues ficheiros que não criaste, alteres configurações do sistema, nem faças git commit, push, reset ou rebase sem eu pedir.
 - Sem dados fictícios apresentados como músicas reais. Funcionalidades inexistentes não podem parecer funcionar.

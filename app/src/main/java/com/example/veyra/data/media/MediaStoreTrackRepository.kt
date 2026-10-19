@@ -7,12 +7,15 @@ import android.os.Build
 import android.provider.MediaStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.onStart
 
 /** Reads music from MediaStore.Audio and re-queries whenever MediaStore reports a change. */
 class MediaStoreTrackRepository(
@@ -21,16 +24,20 @@ class MediaStoreTrackRepository(
 
     private val collection = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
 
-    @OptIn(ExperimentalCoroutinesApi::class)
+    @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     override fun tracks(): Flow<List<Track>> =
         libraryChanges()
-            // A media scan fires bursts of notifications: keep only the latest pending one,
-            // and cancel an in-flight query when a newer change arrives.
+            // MediaProvider can notify before a deletion is visible to queries (observed on
+            // Android 10: the first of two notifications still returned the deleted row), and a
+            // scan sends bursts. Waiting briefly after the last change avoids reading stale data.
+            .debounce(CHANGE_DEBOUNCE_MS)
+            .onStart { emit(Unit) }
+            // Keep only the latest pending change, and cancel an in-flight query for a newer one.
             .conflate()
             .mapLatest { queryTracks() }
             .flowOn(Dispatchers.IO)
 
-    /** Emits once immediately, then on every MediaStore audio change, while collected. */
+    /** Emits on every MediaStore audio change, while collected. */
     private fun libraryChanges(): Flow<Unit> = callbackFlow {
         // A null Handler delivers onChange on a binder thread; trySend is thread-safe.
         val observer = object : ContentObserver(null) {
@@ -39,7 +46,6 @@ class MediaStoreTrackRepository(
             }
         }
         resolver.registerContentObserver(collection, true, observer)
-        trySend(Unit)
         awaitClose { resolver.unregisterContentObserver(observer) }
     }
 
@@ -96,5 +102,9 @@ class MediaStoreTrackRepository(
                 }
             }
         }
+    }
+
+    private companion object {
+        const val CHANGE_DEBOUNCE_MS = 300L
     }
 }

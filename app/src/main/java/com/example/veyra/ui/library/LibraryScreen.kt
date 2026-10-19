@@ -27,6 +27,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -36,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -66,11 +69,28 @@ private val AudioPermissionName =
         Manifest.permission.READ_EXTERNAL_STORAGE
     }
 
-/** Library section: owns the permission flow and wires the ViewModel to [LibraryContent]. */
+/**
+ * Re-checks the audio permission on first display and every time the app returns to the
+ * foreground (it may have changed in system settings). Placed at app level, so playlists know
+ * which tracks exist even if the Library tab was never opened.
+ */
+@Composable
+fun AudioPermissionMonitor(viewModel: LibraryViewModel) {
+    val context = LocalContext.current
+    LifecycleResumeEffect(viewModel) {
+        val granted = ContextCompat.checkSelfPermission(context, AudioPermissionName) ==
+            PackageManager.PERMISSION_GRANTED
+        viewModel.onPermissionChecked(granted)
+        onPauseOrDispose { }
+    }
+}
+
+/** Library section: owns the permission request and wires the ViewModel to [LibraryContent]. */
 @Composable
 fun LibraryScreen(
     currentMediaId: String?,
     onTrackClick: (tracks: List<Track>, index: Int) -> Unit,
+    onTrackOptions: (Track) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: LibraryViewModel = viewModel(factory = LibraryViewModel.Factory),
 ) {
@@ -86,15 +106,6 @@ fun LibraryScreen(
         viewModel.onPermissionResult(granted, rationale)
     }
 
-    // Runs on first display and every time the app returns to the foreground,
-    // so a permission changed in system settings is picked up.
-    LifecycleResumeEffect(viewModel) {
-        val granted = ContextCompat.checkSelfPermission(context, AudioPermissionName) ==
-            PackageManager.PERMISSION_GRANTED
-        viewModel.onPermissionChecked(granted)
-        onPauseOrDispose { }
-    }
-
     LibraryContent(
         state = state,
         onRequestPermission = { permissionLauncher.launch(AudioPermissionName) },
@@ -102,6 +113,7 @@ fun LibraryScreen(
         onRetry = viewModel::retry,
         currentMediaId = currentMediaId,
         onTrackClick = onTrackClick,
+        onTrackOptions = onTrackOptions,
         modifier = modifier,
     )
 }
@@ -114,6 +126,7 @@ private fun LibraryContent(
     onRetry: () -> Unit,
     currentMediaId: String?,
     onTrackClick: (tracks: List<Track>, index: Int) -> Unit,
+    onTrackOptions: (Track) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     VeyraSection(title = stringResource(R.string.library_title), modifier = modifier) {
@@ -141,7 +154,7 @@ private fun LibraryContent(
                 },
             )
 
-            is LibraryUiState.Content -> TrackList(state.tracks, currentMediaId, onTrackClick)
+            is LibraryUiState.Content -> TrackList(state.tracks, currentMediaId, onTrackClick, onTrackOptions)
         }
     }
 }
@@ -192,6 +205,7 @@ private fun TrackList(
     tracks: List<Track>,
     currentMediaId: String?,
     onTrackClick: (tracks: List<Track>, index: Int) -> Unit,
+    onTrackOptions: (Track) -> Unit,
 ) {
     LazyColumn(
         contentPadding = PaddingValues(bottom = 16.dp),
@@ -211,13 +225,14 @@ private fun TrackList(
                 isCurrent = track.id.toString() == currentMediaId,
                 // The queue is the library as currently shown, starting at the tapped track.
                 onClick = { onTrackClick(tracks, index) },
+                onOptions = { onTrackOptions(track) },
             )
         }
     }
 }
 
 @Composable
-private fun TrackRow(track: Track, isCurrent: Boolean, onClick: () -> Unit) {
+private fun TrackRow(track: Track, isCurrent: Boolean, onClick: () -> Unit, onOptions: () -> Unit) {
     val nowPlaying = stringResource(R.string.track_now_playing)
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -226,7 +241,7 @@ private fun TrackRow(track: Track, isCurrent: Boolean, onClick: () -> Unit) {
             .background(if (isCurrent) MaterialTheme.colorScheme.surfaceContainer else Color.Transparent)
             .clickable(onClickLabel = stringResource(R.string.track_play_action), onClick = onClick)
             .heightIn(min = 64.dp)
-            .padding(horizontal = 24.dp, vertical = 8.dp)
+            .padding(start = 24.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)
             // TalkBack reads title, artist and duration as one item, plus "A tocar" when current.
             .semantics(mergeDescendants = true) {
                 selected = isCurrent
@@ -257,6 +272,13 @@ private fun TrackRow(track: Track, isCurrent: Boolean, onClick: () -> Unit) {
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        IconButton(onClick = onOptions) {
+            Icon(
+                painter = painterResource(R.drawable.ic_more_vert),
+                contentDescription = stringResource(R.string.track_options),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
@@ -281,6 +303,7 @@ private fun LibraryPermissionPreview() {
             onRetry = {},
             currentMediaId = "1",
             onTrackClick = { _, _ -> },
+            onTrackOptions = {},
         )
     }
 }
@@ -301,6 +324,7 @@ private fun LibraryContentPreview() {
             onRetry = {},
             currentMediaId = "1",
             onTrackClick = { _, _ -> },
+            onTrackOptions = {},
         )
     }
 }
