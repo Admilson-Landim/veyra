@@ -148,6 +148,7 @@ class PlayerConnection(context: Context) {
             currentMediaId = c.currentMediaItem?.mediaId,
             title = c.mediaMetadata.title?.toString(),
             artist = c.mediaMetadata.artist?.toString(),
+            artworkUri = c.currentMediaItem?.requestMetadata?.mediaUri?.toString(),
             isPlaying = c.isPlaying,
             showPause = shouldShowPause(c.playWhenReady, c.playbackState),
             positionMs = c.currentPosition.coerceAtLeast(0),

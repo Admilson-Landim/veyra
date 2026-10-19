@@ -44,12 +44,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.veyra.R
+import com.example.veyra.data.media.ArtworkSize
 import com.example.veyra.playback.PlayerState
 import com.example.veyra.playback.RepeatMode
 import com.example.veyra.playback.progressFraction
 import com.example.veyra.ui.library.formatDuration
 import com.example.veyra.ui.theme.VeyraTheme
-import com.example.veyra.ui.theme.components.ArtworkPlaceholder
+import com.example.veyra.ui.theme.components.TrackArtwork
 
 /** Callbacks shared by the full player controls. */
 data class PlayerActions(
@@ -74,7 +75,7 @@ fun PlayerScreen(
         Box(Modifier.windowInsetsPadding(WindowInsets.safeDrawing)) {
             BoxWithConstraints(Modifier.fillMaxSize()) {
                 // Artwork fits the screen: never wider than the content, nor taller than ~45% of it.
-                val artworkSize = minOf(maxWidth - 48.dp, maxHeight * 0.45f, 360.dp)
+                val artworkDp = minOf(maxWidth - 48.dp, maxHeight * 0.45f, 360.dp)
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
@@ -92,7 +93,7 @@ fun PlayerScreen(
                         }
                     }
                     Spacer(Modifier.height(16.dp))
-                    ArtworkPlaceholder(size = artworkSize)
+                    TrackArtwork(contentUri = state.artworkUri, size = artworkDp, artworkSize = ArtworkSize.Large)
                     Spacer(Modifier.height(32.dp))
                     Column(Modifier.widthIn(max = 480.dp)) {
                         Text(

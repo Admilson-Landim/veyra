@@ -29,6 +29,16 @@ class MediaItemMappingTest {
         assertEquals("Nina Simone", item.mediaMetadata.artist.toString())
         assertEquals("I Put a Spell on You", item.mediaMetadata.albumTitle.toString())
         assertEquals(MediaMetadata.MEDIA_TYPE_MUSIC, item.mediaMetadata.mediaType)
+        // Used by the UI to load the cover; travels to controllers with the item.
+        assertEquals("content://media/external/audio/media/42", item.requestMetadata.mediaUri.toString())
+    }
+
+    @Test
+    fun noArtworkInMediaItem_soEmbeddedCoverIsKept() {
+        // Setting artwork here would make ExoPlayer drop the cover extracted from the file.
+        val metadata = track().toMediaItem().mediaMetadata
+        assertNull(metadata.artworkUri)
+        assertNull(metadata.artworkData)
     }
 
     @Test

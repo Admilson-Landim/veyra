@@ -59,12 +59,11 @@ fun VeyraHeader(modifier: Modifier = Modifier) {
 }
 
 /**
- * Square artwork placeholder in the Veyra identity. Shown wherever a cover would appear
- * when there is no real artwork (real covers arrive in a later phase).
- * Decorative: it carries no content description.
+ * Square brand tile with a centred icon, used as the illustration of empty states.
+ * (Track covers use TrackArtwork.) Decorative: it carries no content description.
  */
 @Composable
-fun ArtworkPlaceholder(
+fun BrandTile(
     modifier: Modifier = Modifier,
     size: Dp = 56.dp,
     @DrawableRes icon: Int = R.drawable.ic_music_note,
@@ -113,7 +112,7 @@ fun VeyraEmptyState(
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.widthIn(max = 360.dp),
         ) {
-            ArtworkPlaceholder(size = 112.dp, icon = icon)
+            BrandTile(size = 112.dp, icon = icon)
             Spacer(Modifier.height(28.dp))
             Text(
                 text = title,
@@ -165,7 +164,7 @@ private fun BrandComponentsPreview() {
         Column(Modifier.padding(16.dp)) {
             VeyraHeader()
             Spacer(Modifier.height(16.dp))
-            ArtworkPlaceholder()
+            BrandTile()
         }
     }
 }

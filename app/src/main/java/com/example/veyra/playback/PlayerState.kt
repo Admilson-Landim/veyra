@@ -21,6 +21,8 @@ data class PlayerState(
     val currentMediaId: String? = null,
     val title: String? = null,
     val artist: String? = null,
+    /** content:// URI of the current file, used to load its cover. */
+    val artworkUri: String? = null,
     /** True only while audio is actually advancing (drives the position ticker). */
     val isPlaying: Boolean = false,
     /** True when the play/pause button should offer "pause" (also while buffering). */

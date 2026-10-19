@@ -51,9 +51,10 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.veyra.R
+import com.example.veyra.data.media.ArtworkSize
 import com.example.veyra.data.media.Track
 import com.example.veyra.ui.theme.VeyraTheme
-import com.example.veyra.ui.theme.components.ArtworkPlaceholder
+import com.example.veyra.ui.theme.components.TrackArtwork
 import com.example.veyra.ui.theme.components.VeyraEmptyState
 import com.example.veyra.ui.theme.components.VeyraSection
 
@@ -232,7 +233,7 @@ private fun TrackRow(track: Track, isCurrent: Boolean, onClick: () -> Unit) {
                 if (isCurrent) stateDescription = nowPlaying
             },
     ) {
-        ArtworkPlaceholder(size = 48.dp)
+        TrackArtwork(contentUri = track.contentUri, size = 48.dp, artworkSize = ArtworkSize.Thumbnail)
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
             Text(

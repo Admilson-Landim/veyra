@@ -27,7 +27,8 @@ import com.example.veyra.R
 import com.example.veyra.playback.PlayerState
 import com.example.veyra.playback.progressFraction
 import com.example.veyra.ui.theme.VeyraTheme
-import com.example.veyra.ui.theme.components.ArtworkPlaceholder
+import com.example.veyra.data.media.ArtworkSize
+import com.example.veyra.ui.theme.components.TrackArtwork
 
 /** Compact player pinned under the library list. Tapping it opens the full player. */
 @Composable
@@ -56,7 +57,7 @@ fun MiniPlayer(
                     .heightIn(min = 64.dp)
                     .padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
             ) {
-                ArtworkPlaceholder(size = 44.dp)
+                TrackArtwork(contentUri = state.artworkUri, size = 44.dp, artworkSize = ArtworkSize.Thumbnail)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(

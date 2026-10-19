@@ -2,17 +2,24 @@ package com.example.veyra.playback
 
 import android.app.PendingIntent
 import android.content.Intent
+import android.graphics.Bitmap
 import android.os.Handler
 import android.os.Looper
+import androidx.annotation.OptIn
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DataSourceBitmapLoader
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.example.veyra.MainActivity
+import com.example.veyra.R
 
 /**
  * Owns the ExoPlayer and exposes it through a MediaSession. The UI never touches the player
@@ -36,6 +43,7 @@ class PlaybackService : MediaSessionService() {
     private val idleHandler = Handler(Looper.getMainLooper())
     private val stopWhenIdle = Runnable { stopSelf() }
 
+    @OptIn(UnstableApi::class) // setBitmapLoader
     override fun onCreate() {
         super.onCreate()
         val player = ExoPlayer.Builder(this)
@@ -56,6 +64,7 @@ class PlaybackService : MediaSessionService() {
         player.addListener(IdleStopTimer())
         mediaSession = MediaSession.Builder(this, player)
             .setSessionActivity(openPlayerIntent())
+            .setBitmapLoader(artworkLoader())
             .build()
         // Also covers a service restarted by the system with an empty player.
         scheduleIdleStop()
@@ -82,6 +91,21 @@ class PlaybackService : MediaSessionService() {
         mediaSession = null
         super.onDestroy()
     }
+
+    // Rendered once, on first use, from the same vector the app shows.
+    private val defaultArtwork: Bitmap by lazy {
+        ContextCompat.getDrawable(this, R.drawable.veyra_default_artwork)!!
+            .toBitmap(DEFAULT_ARTWORK_PX, DEFAULT_ARTWORK_PX)
+    }
+
+    /** Notification / lock screen artwork: the embedded cover, or the default Veyra artwork. */
+    @OptIn(UnstableApi::class)
+    private fun artworkLoader() = DefaultArtworkBitmapLoader(
+        delegate = DataSourceBitmapLoader.Builder(this)
+            .setMaximumOutputDimension(DEFAULT_ARTWORK_PX * 2)
+            .build(),
+        defaultArtwork = { defaultArtwork },
+    )
 
     /** Tapping the notification (or the lock screen media card) opens the app on the player. */
     private fun openPlayerIntent(): PendingIntent =
@@ -126,5 +150,8 @@ class PlaybackService : MediaSessionService() {
         // Longer than Media3's 10-minute foreground timeout, so the notification has already
         // become dismissible when the service goes away.
         const val IDLE_STOP_DELAY_MS = 15 * 60 * 1000L
+
+        // Media notifications show artwork at most a few hundred pixels wide.
+        const val DEFAULT_ARTWORK_PX = 512
     }
 }
