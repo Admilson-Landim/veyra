@@ -12,6 +12,8 @@ A minimalist, private music player for the audio files on your Android device.
 ![Media3](https://img.shields.io/badge/Media3-1.11-D8C8A4?style=flat-square)
 ![Version](https://img.shields.io/badge/version-1.0.0-17181C?style=flat-square)
 
+[![Download APK](https://img.shields.io/badge/Download-APK%201.0.0-D8C8A4?style=for-the-badge)](https://github.com/Admilson-Landim/veyra/releases/tag/v1.0.0)
+
 </div>
 
 ---
@@ -25,6 +27,7 @@ audio files themselves are never modified.
 
 ## Contents
 
+- [Download](#download)
 - [Highlights](#highlights)
 - [Features](#features)
 - [Privacy](#privacy)
@@ -38,6 +41,17 @@ audio files themselves are never modified.
 - [Roadmap](#roadmap)
 - [License](#license)
 - [Resumo em português](#resumo-em-português)
+
+## Download
+
+**[Veyra 1.0.0 — APK on GitHub Releases](https://github.com/Admilson-Landim/veyra/releases/tag/v1.0.0)** (Android 7.0+)
+
+1. Open the link on your phone and tap `veyra-1.0.0.apk`.
+2. Allow installing apps from unknown sources when Android asks.
+3. Optional: check the file against `veyra-1.0.0.apk.sha256`, published with it.
+
+This APK and the Google Play version are signed with different keys: to switch from one to the
+other, uninstall first (playlists and settings are lost).
 
 ## Highlights
 
@@ -241,6 +255,11 @@ dispositivo. Sem contas, sem anúncios, sem streaming e sem acesso à internet.
 O seu ponto forte é o **controlo do início e do fim de cada música**: recortar a introdução longa
 de uma faixa, terminar outra antes do fade-out, ou aplicar uma regra global a toda a biblioteca —
 sem nunca alterar os ficheiros.
+
+**Descarregar:** [Veyra 1.0.0 — APK no GitHub](https://github.com/Admilson-Landim/veyra/releases/tag/v1.0.0) (Android 7.0+). Abre o link no telemóvel,
+toca em `veyra-1.0.0.apk` e autoriza "instalar apps desconhecidas". A versão do GitHub e a da Google
+Play são assinadas com chaves diferentes: para trocar de uma para a outra, é preciso desinstalar
+primeiro (as playlists e as definições perdem-se).
 
 **Funcionalidades principais:** biblioteca por faixas, pastas ou artistas, com pesquisa,
 ordenação e exclusão de gravações; nomes limpos a partir do ficheiro e correção de etiquetas mal
