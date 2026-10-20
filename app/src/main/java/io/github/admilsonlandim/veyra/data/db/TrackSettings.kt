@@ -68,6 +68,9 @@ abstract class TrackSettingsDao {
     @Query("SELECT * FROM track_settings")
     abstract fun observeAll(): Flow<List<TrackSettingsEntity>>
 
+    @Query("SELECT * FROM track_settings")
+    abstract suspend fun all(): List<TrackSettingsEntity>
+
     @Insert
     abstract suspend fun insert(entity: TrackSettingsEntity): Long
 

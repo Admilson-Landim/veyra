@@ -5,6 +5,7 @@ import android.app.RecoverableSecurityException
 import android.content.Context
 import android.content.IntentSender
 import android.content.pm.PackageManager
+import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
@@ -36,7 +37,29 @@ sealed interface RemovalStep {
     /** Android 10 and older: the storage write permission must be granted first. */
     data object NeedsWritePermission : RemovalStep
 
-    data object Failed : RemovalStep
+    data class Failed(val reason: RemovalFailure) : RemovalStep
+}
+
+enum class RemovalFailure {
+    /** The file was already gone (deleted elsewhere). */
+    NotFound,
+
+    /** The file could not be deleted where it is, e.g. on a read-only SD card. */
+    ReadOnly,
+
+    /** The storage permission was refused. */
+    NoPermission,
+    Other,
+}
+
+/** What the removal flow needs from [TrackRemover]; an interface so it can be faked in tests. */
+interface TrackFileRemover {
+    val mode: RemovalMode
+
+    suspend fun start(track: Track): RemovalStep
+
+    /** The system dialog returned OK. */
+    suspend fun onSystemConfirmed(track: Track): RemovalStep
 }
 
 /**
@@ -53,43 +76,52 @@ sealed interface RemovalStep {
  *
  * Call [start] after the user confirmed in the app, then follow the returned step.
  */
-class TrackRemover(context: Context) {
+class TrackRemover(context: Context) : TrackFileRemover {
 
     private val appContext = context.applicationContext
     private val resolver = appContext.contentResolver
 
-    val mode: RemovalMode = removalModeFor(Build.VERSION.SDK_INT)
+    override val mode: RemovalMode = removalModeFor(Build.VERSION.SDK_INT)
 
-    suspend fun start(track: Track): RemovalStep = withContext(Dispatchers.IO) {
+    override suspend fun start(track: Track): RemovalStep = withContext(Dispatchers.IO) {
         val uri = track.contentUri.toUri()
         when {
+            !exists(uri) -> RemovalStep.Failed(RemovalFailure.NotFound)
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> runCatching {
                 RemovalStep.NeedsSystemConfirmation(MediaStore.createTrashRequest(resolver, listOf(uri), true).intentSender)
-            }.getOrDefault(RemovalStep.Failed)
+            }.getOrDefault(RemovalStep.Failed(RemovalFailure.Other))
             !canWriteLegacy() -> RemovalStep.NeedsWritePermission
             else -> delete(track)
         }
     }
 
-    /** The system dialog returned OK. */
-    suspend fun onSystemConfirmed(track: Track): RemovalStep =
+    override suspend fun onSystemConfirmed(track: Track): RemovalStep =
         if (mode == RemovalMode.Trash) RemovalStep.Removed else withContext(Dispatchers.IO) { delete(track) }
 
     private fun delete(track: Track): RemovalStep = try {
         val uri = track.contentUri.toUri()
         val file = filePath(uri)?.let(::File)
         when {
-            resolver.delete(uri, null, null) == 0 -> RemovalStep.Failed
-            file != null && file.exists() && !file.delete() -> RemovalStep.Failed
+            resolver.delete(uri, null, null) == 0 ->
+                RemovalStep.Failed(if (exists(uri)) RemovalFailure.Other else RemovalFailure.NotFound)
+            file != null && file.exists() && !file.delete() -> {
+                // The entry is gone but the file stays (e.g. a read-only SD card): index it again,
+                // so the library keeps showing what is really on the device.
+                MediaScannerConnection.scanFile(appContext, arrayOf(file.path), null, null)
+                RemovalStep.Failed(RemovalFailure.ReadOnly)
+            }
             else -> RemovalStep.Removed
         }
     } catch (e: SecurityException) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && e is RecoverableSecurityException) {
             RemovalStep.NeedsSystemConfirmation(e.userAction.actionIntent.intentSender)
         } else {
-            RemovalStep.Failed
+            RemovalStep.Failed(RemovalFailure.ReadOnly)
         }
     }
+
+    private fun exists(uri: Uri): Boolean =
+        resolver.query(uri, arrayOf(MediaStore.MediaColumns._ID), null, null, null)?.use { it.count > 0 } ?: false
 
     // Readable before Android 11 (legacy storage on Android 10), which is the only time it is used.
     @Suppress("DEPRECATION")

@@ -75,6 +75,24 @@ abstract class PlaylistDao {
         touch(playlistId, now)
     }
 
+    @Query("SELECT * FROM playlist_tracks")
+    abstract suspend fun allEntries(): List<PlaylistTrackEntity>
+
+    /**
+     * Removes every entry for which [matches] is true (a deleted file), in all playlists, keeping
+     * each playlist's positions contiguous. Returns how many entries were removed.
+     */
+    @Transaction
+    open suspend fun removeEntriesWhere(now: Long, matches: (PlaylistTrackEntity) -> Boolean): Int {
+        val removed = allEntries().filter(matches)
+        removed.forEach { deleteEntry(it.id) }
+        removed.map { it.playlistId }.distinct().forEach { playlistId ->
+            writePositions(entries(playlistId))
+            touch(playlistId, now)
+        }
+        return removed.size
+    }
+
     /** Moves the entry at index [from] to index [to]; out-of-range indexes do nothing. */
     @Transaction
     open suspend fun moveEntry(playlistId: Long, from: Int, to: Int, now: Long) {

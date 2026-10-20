@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.media.RingtoneManager
 import android.net.Uri
+import android.provider.MediaStore
 import android.provider.Settings
 import androidx.core.net.toUri
 import io.github.admilsonlandim.veyra.data.clips.TrackClip
@@ -50,6 +51,24 @@ object RingtoneSetter {
         }
         return apply(context, target, uri)
     }
+
+    /**
+     * The system sounds currently set to [track]'s own file (not to an excerpt made from it), so
+     * the user can be warned before it is removed. Reading them needs no permission.
+     */
+    suspend fun targetsUsing(context: Context, track: Track): Set<RingtoneTarget> = withContext(Dispatchers.IO) {
+        RingtoneTarget.entries.filter { target ->
+            runCatching {
+                RingtoneManager.getActualDefaultRingtoneUri(context, target.type)?.let { isSameFile(it, track) } == true
+            }.getOrDefault(false)
+        }.toSet()
+    }
+
+    /** content://media/external/audio/media/<id>, possibly with a query, for the track's id. */
+    private fun isSameFile(uri: Uri, track: Track): Boolean =
+        uri.authority == MediaStore.AUTHORITY &&
+            uri.pathSegments.firstOrNull()?.startsWith("external") == true &&
+            uri.lastPathSegment?.toLongOrNull() == track.id
 
     private suspend fun apply(context: Context, target: RingtoneTarget, uri: Uri): Boolean = withContext(Dispatchers.IO) {
         runCatching {

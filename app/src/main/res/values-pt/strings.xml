@@ -276,13 +276,16 @@
     <string name="options_move_to_trash">Mover para o lixo</string>
     <string name="options_delete">Apagar do dispositivo</string>
     <string name="remove_trash_title">Mover para o lixo?</string>
-    <string name="remove_trash_message">“%1$s” (%2$s) sai da biblioteca e vai para o lixo do dispositivo. Podes recuperá-la durante cerca de 30 dias, por exemplo na app Ficheiros; depois é apagada de vez.</string>
+    <string name="remove_trash_message">O ficheiro vai para o lixo do dispositivo e sai da biblioteca. Pode ser recuperado durante cerca de 30 dias, por exemplo na app Ficheiros; depois é apagado de vez.</string>
     <string name="remove_trash_confirm">Mover para o lixo</string>
-    <string name="remove_delete_title">Apagar definitivamente?</string>
-    <string name="remove_delete_message">“%1$s” (%2$s) vai ser apagada deste dispositivo. Isto não pode ser desfeito.</string>
+    <string name="remove_delete_title">Apagar do dispositivo?</string>
+    <string name="remove_delete_message">O ficheiro será removido do dispositivo. Esta ação não pode ser desfeita.</string>
     <string name="remove_delete_confirm">Apagar</string>
     <string name="remove_done_trash">“%1$s” foi movida para o lixo</string>
     <string name="remove_done_delete">“%1$s” foi apagada</string>
     <string name="remove_failed">Não foi possível remover a faixa</string>
     <string name="remove_permission_denied">Para apagar ficheiros é precisa a permissão de armazenamento</string>
+    <string name="remove_ringtone_warning">Este ficheiro está definido como: %1$s. Depois de removido, o sistema volta ao som por defeito.</string>
+    <string name="remove_failed_not_found">Este ficheiro já não existe</string>
+    <string name="remove_failed_read_only">Não foi possível apagar: o ficheiro está numa localização só de leitura, como um cartão SD</string>
 </resources>

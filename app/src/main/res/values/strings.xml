@@ -277,13 +277,16 @@
     <string name="options_move_to_trash">Move to trash</string>
     <string name="options_delete">Delete from device</string>
     <string name="remove_trash_title">Move to trash?</string>
-    <string name="remove_trash_message">“%1$s” (%2$s) leaves the library and goes to the device\'s trash. You can restore it for about 30 days, for example in the Files app; after that it is deleted for good.</string>
+    <string name="remove_trash_message">The file goes to the device\'s trash and leaves the library. It can be restored for about 30 days, for example in the Files app; after that it is deleted for good.</string>
     <string name="remove_trash_confirm">Move to trash</string>
-    <string name="remove_delete_title">Delete for good?</string>
-    <string name="remove_delete_message">“%1$s” (%2$s) will be deleted from this device. This can\'t be undone.</string>
+    <string name="remove_delete_title">Delete from device?</string>
+    <string name="remove_delete_message">The file will be removed from the device. This can\'t be undone.</string>
     <string name="remove_delete_confirm">Delete</string>
     <string name="remove_done_trash">“%1$s” moved to the trash</string>
     <string name="remove_done_delete">“%1$s” deleted</string>
     <string name="remove_failed">Couldn\'t remove the track</string>
     <string name="remove_permission_denied">Deleting files needs the storage permission</string>
+    <string name="remove_ringtone_warning">This file is set as: %1$s. Once it is removed, the system goes back to its default sound.</string>
+    <string name="remove_failed_not_found">This file no longer exists</string>
+    <string name="remove_failed_read_only">Couldn\'t delete: the file is somewhere read-only, such as an SD card</string>
 </resources>

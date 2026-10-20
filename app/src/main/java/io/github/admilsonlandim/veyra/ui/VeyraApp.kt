@@ -64,6 +64,7 @@ import io.github.admilsonlandim.veyra.ui.library.LibraryScreen
 import io.github.admilsonlandim.veyra.ui.library.LibraryUiState
 import io.github.admilsonlandim.veyra.ui.library.LibraryViewModel
 import io.github.admilsonlandim.veyra.ui.library.allTracksOrNull
+import io.github.admilsonlandim.veyra.ui.options.RemovalViewModel
 import io.github.admilsonlandim.veyra.ui.options.RingtoneSetter
 import io.github.admilsonlandim.veyra.ui.options.RingtoneSheet
 import io.github.admilsonlandim.veyra.ui.options.RingtoneTarget
@@ -105,6 +106,7 @@ fun VeyraApp(
     libraryViewModel: LibraryViewModel = viewModel(factory = LibraryViewModel.Factory),
     playerViewModel: PlayerViewModel = viewModel(factory = PlayerViewModel.factory(libraryViewModel.uiState)),
     playlistsViewModel: PlaylistsViewModel = viewModel(factory = PlaylistsViewModel.factory(libraryViewModel.uiState)),
+    removalViewModel: RemovalViewModel = viewModel(factory = RemovalViewModel.Factory),
 ) {
     var destination by rememberSaveable { mutableStateOf(VeyraDestination.Library) }
     var playerOpen by rememberSaveable { mutableStateOf(false) }
@@ -113,7 +115,6 @@ fun VeyraApp(
     var adjustClipTrack by remember { mutableStateOf<Track?>(null) }
     var optionsTrack by remember { mutableStateOf<Track?>(null) }
     var propertiesTrack by remember { mutableStateOf<Track?>(null) }
-    var removeTrack by remember { mutableStateOf<Track?>(null) }
     var ringtonePermissionNeeded by rememberSaveable { mutableStateOf(false) }
     var ringtoneRequest by remember { mutableStateOf<Pair<Track, RingtoneTarget>?>(null) }
     var ringtoneInProgress by remember { mutableStateOf(false) }
@@ -297,7 +298,7 @@ fun VeyraApp(
                 // Whole song or only a part: chosen in the ringtone sheet; the permission is
                 // checked when the user confirms.
                 onSetRingtone = { t, target -> ringtoneRequest = t to target },
-                onRemove = { removeTrack = it },
+                onRemove = removalViewModel::request,
             ),
             onDismiss = { optionsTrack = null },
         )
@@ -305,10 +306,8 @@ fun VeyraApp(
     propertiesTrack?.let { track -> TrackPropertiesSheet(track, onDismiss = { propertiesTrack = null }) }
 
     TrackRemovalHost(
-        request = removeTrack,
-        onDismissRequest = { removeTrack = null },
-        trackForId = { id -> libraryState.allTracksOrNull?.firstOrNull { it.id == id } },
-        // The library drops it by itself (MediaStore change); the queue must too.
+        viewModel = removalViewModel,
+        // The library drops it by itself (MediaStore change); the player's queue must too.
         onRemoved = playerViewModel::removeFromQueue,
         onMessage = showMessage,
     )
