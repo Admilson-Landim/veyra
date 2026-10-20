@@ -18,7 +18,7 @@ android {
         minSdk = 24
         targetSdk = 37
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -61,12 +61,6 @@ android {
     androidResources {
         // Generates the locale_config for Android 13+'s per-app language picker from values-*.
         generateLocaleConfig = true
-    }
-    lint {
-        // READ_MEDIA_IMAGES is only used to find cover images by folder and name; partial
-        // "selected photos" access (Android 14) cannot serve that, so it is not handled. The
-        // manifest's tools:ignore is not honoured by this check, hence the project-level switch.
-        disable += "SelectedPhotoAccess"
     }
 }
 

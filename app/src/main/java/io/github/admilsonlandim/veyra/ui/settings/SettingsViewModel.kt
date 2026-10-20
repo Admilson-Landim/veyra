@@ -89,8 +89,6 @@ class SettingsViewModel(
         }
     }
 
-    /** The photos permission was just granted (Android 13+): covers can now be found. */
-    fun onImagesPermissionGranted() = setUseDeviceImages(true)
 
     fun setAppearance(mode: AppearanceMode) {
         viewModelScope.launch { preferences.setAppearance(mode) }

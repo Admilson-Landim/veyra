@@ -1,0 +1,1 @@
+First release of Veyra: local library with tracks, folders and artists, search, playlists, start/end per track, sleep timer, equalizer, balanced volume, ringtones, and dark and light themes. No ads, no account, no internet.

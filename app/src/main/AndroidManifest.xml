@@ -4,12 +4,10 @@
 
     <!-- Android 13+ (API 33): granular audio permission. -->
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
-    <!-- Android 13+: optional, only to find covers stored as separate image files
-         (Settings > Library). Requested from that switch, never at start-up. Android 14's
-         "selected photos" partial access is not useful here: covers are looked up by folder and
-         name across all images, so with partial access they are simply not found. -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <!-- Android 12L and earlier: broad storage read access (audio and images). -->
+    <!-- No READ_MEDIA_IMAGES: Google Play only allows it when broad photo access is the app's core
+         use, which finding covers is not. On Android 13+ covers therefore come only from the
+         files themselves. -->
+    <!-- Android 12L and earlier: broad storage read access (audio, and images for covers). -->
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />

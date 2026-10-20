@@ -1,0 +1,1 @@
+Primeira versão do Veyra: biblioteca local com faixas, pastas e artistas, pesquisa, playlists, início/fim por faixa, temporizador, equalizador, volume equilibrado, toques e tema escuro e claro. Sem anúncios, sem conta, sem internet.

@@ -1,11 +1,5 @@
 package io.github.admilsonlandim.veyra.ui.settings
 
-import android.Manifest
-import android.content.Context
-import android.content.pm.PackageManager
-import android.os.Build
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -42,12 +36,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.admilsonlandim.veyra.R
 import io.github.admilsonlandim.veyra.data.audio.AudioEffectsSupport
-import io.github.admilsonlandim.veyra.data.media.ArtworkLoader
+import io.github.admilsonlandim.veyra.data.media.deviceImagesSupported
 import io.github.admilsonlandim.veyra.ui.theme.components.VeyraSection
 
 /**
@@ -65,28 +57,6 @@ fun SettingsScreen(viewModel: SettingsViewModel, modifier: Modifier = Modifier) 
     val sessionId by AudioEffectsSupport.playbackSessionId.collectAsStateWithLifecycle()
     val systemPanel = remember(sessionId) { systemEffectsPanelIntent(context) }
 
-    // Android 13+ needs the photos permission to read cover images; re-checked on every resume.
-    var imagesGranted by remember { mutableStateOf(hasImagesPermission(context)) }
-    LifecycleResumeEffect(Unit) {
-        val granted = hasImagesPermission(context)
-        if (granted != imagesGranted) {
-            imagesGranted = granted
-            ArtworkLoader.get(context).invalidate()
-        }
-        onPauseOrDispose { }
-    }
-    val imagesLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        imagesGranted = granted
-        if (granted) viewModel.onImagesPermissionGranted()
-    }
-    val deviceImagesOn = prefs.useDeviceImages && imagesGranted
-    val toggleDeviceImages: (Boolean) -> Unit = { enable ->
-        if (enable && !imagesGranted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            imagesLauncher.launch(Manifest.permission.READ_MEDIA_IMAGES)
-        } else {
-            viewModel.setUseDeviceImages(enable)
-        }
-    }
 
     VeyraSection(title = stringResource(R.string.settings_title), modifier = modifier) {
         LazyColumn(contentPadding = PaddingValues(bottom = 24.dp), modifier = Modifier.fillMaxSize()) {
@@ -146,13 +116,16 @@ fun SettingsScreen(viewModel: SettingsViewModel, modifier: Modifier = Modifier) 
                 }
             }
 
-            item(key = "device-images") {
-                SwitchRow(
-                    title = stringResource(R.string.settings_device_images),
-                    detail = stringResource(R.string.settings_device_images_detail),
-                    checked = deviceImagesOn,
-                    onCheckedChange = toggleDeviceImages,
-                )
+            // Only where it can work (Android 12 and older, see deviceImagesSupported).
+            if (deviceImagesSupported) {
+                item(key = "device-images") {
+                    SwitchRow(
+                        title = stringResource(R.string.settings_device_images),
+                        detail = stringResource(R.string.settings_device_images_detail),
+                        checked = prefs.useDeviceImages,
+                        onCheckedChange = viewModel::setUseDeviceImages,
+                    )
+                }
             }
 
             item(key = "clean-names") {
@@ -305,11 +278,6 @@ internal fun SwitchRow(title: String, detail: String?, checked: Boolean, onCheck
         )
     }
 }
-
-private fun hasImagesPermission(context: Context): Boolean =
-    Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-        ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_IMAGES) ==
-        PackageManager.PERMISSION_GRANTED
 
 @Composable
 internal fun SectionHeader(title: String) {

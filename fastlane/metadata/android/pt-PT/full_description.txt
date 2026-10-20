@@ -1,0 +1,30 @@
+O Veyra é um leitor de música para os ficheiros de áudio guardados no teu telemóvel. Sem anúncios, sem conta, sem ligação à internet: a tua música, as playlists e as definições nunca saem do dispositivo.
+
+A TUA BIBLIOTECA
+• Encontra automaticamente a música do dispositivo e acompanha os ficheiros que entram ou saem.
+• Vê por faixas, pastas ou artistas, e ordena por título, artista, álbum, data em que foi adicionada ou duração.
+• Pesquisa títulos, artistas, álbuns e pastas enquanto escreves, sem distinguir acentos nem maiúsculas.
+• Nomes limpos: ficheiros sem etiquetas, como "Artista_-_Música_(Official_Video).mp3", aparecem como "Música" de "Artista". Etiquetas com caracteres estranhos ("JoÃ£o") aparecem corretas ("João"). Os teus ficheiros nunca são alterados.
+• Esconde as pastas que não queres, como gravações de voz, e ignora faixas muito curtas.
+• Capas dos ficheiros (e, no Android 12 e anteriores, de imagens na mesma pasta).
+
+REPRODUÇÃO
+• Toca em segundo plano, com controlos na notificação e no ecrã bloqueado.
+• Retoma a última fila onde a deixaste.
+• Aleatório, repetir uma ou todas, e desliza a capa para mudar de faixa.
+• Define onde cada faixa começa e acaba, ou salta os primeiros ou os últimos segundos de todas.
+• Saltar silêncio.
+• Temporizador: de 15 a 90 minutos, um tempo à tua escolha ou o fim da faixa atual, com o volume a baixar suavemente.
+
+SOM
+• Equalizador com as bandas e predefinições do teu dispositivo, e reforço de graves.
+• Volume equilibrado entre faixas, com as etiquetas ReplayGain quando existem.
+(Os efeitos de áudio dependem do dispositivo; alguns fabricantes ignoram-nos ou substituem-nos.)
+
+MAIS
+• Playlists: cria, muda o nome, reordena e toca.
+• Define uma música, ou só uma parte, como toque de chamada, notificação ou alarme.
+• Remove uma faixa do dispositivo: vai para o lixo do sistema no Android 11 e posteriores.
+• Tema escuro e claro, em português e inglês.
+
+O Veyra toca os ficheiros de áudio que já estão no teu dispositivo. Não faz streaming, não descarrega nem vende música.

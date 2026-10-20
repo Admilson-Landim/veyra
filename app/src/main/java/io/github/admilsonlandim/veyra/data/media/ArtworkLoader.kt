@@ -1,9 +1,7 @@
 package io.github.admilsonlandim.veyra.data.media
 
-import android.Manifest
 import android.content.ContentUris
 import android.content.Context
-import android.content.pm.PackageManager
 import android.database.ContentObserver
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -15,7 +13,6 @@ import android.provider.MediaStore
 import android.util.LruCache
 import android.util.Size
 import androidx.annotation.RequiresApi
-import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import io.github.admilsonlandim.veyra.data.settings.AppPreferences
 import kotlinx.coroutines.CancellationException
@@ -137,13 +134,13 @@ class ArtworkLoader private constructor(context: Context) {
         return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
     }
 
-    /** The setting is on, and images are readable (Android 13+ needs the photos permission). */
-    private suspend fun deviceImagesEnabled(): Boolean {
-        if (!AppPreferences.get(appContext).library.first().useDeviceImages) return false
-        return Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-            ContextCompat.checkSelfPermission(appContext, Manifest.permission.READ_MEDIA_IMAGES) ==
-            PackageManager.PERMISSION_GRANTED
-    }
+    /**
+     * The setting is on and images are readable: only up to Android 12, where the storage
+     * permission covers images. Android 13+ would need READ_MEDIA_IMAGES, which the app does not
+     * request (Google Play photo policy), so there covers come only from the files themselves.
+     */
+    private suspend fun deviceImagesEnabled(): Boolean =
+        deviceImagesSupported && AppPreferences.get(appContext).library.first().useDeviceImages
 
     private fun loadSidecar(audioUri: Uri, size: ArtworkSize, signal: CancellationSignal): Bitmap? {
         val audioId = runCatching { ContentUris.parseId(audioUri) }.getOrNull() ?: return null
@@ -257,3 +254,6 @@ class ArtworkLoader private constructor(context: Context) {
         private fun cacheSizeBytes(): Int = (Runtime.getRuntime().maxMemory() / 8).toInt()
     }
 }
+
+/** Covers from separate images ("Look for covers in device images") work up to Android 12. */
+val deviceImagesSupported: Boolean = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU

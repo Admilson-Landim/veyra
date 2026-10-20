@@ -1,0 +1,30 @@
+Veyra is a music player for the audio files stored on your phone. No ads, no account, no internet connection: your music, playlists and settings never leave the device.
+
+YOUR LIBRARY
+• Finds the music on your device automatically and keeps up when files are added or removed.
+• Browse by tracks, folders or artists, and sort by title, artist, album, date added or length.
+• Search titles, artists, albums and folders as you type, ignoring accents and case.
+• Tidy names: files without tags, such as "Artist_-_Song_(Official_Video).mp3", are shown as "Song" by "Artist". Tags with garbled characters ("JoÃ£o") are shown correctly ("João"). Your files are never changed.
+• Hide folders you don't want, such as voice recordings, and skip very short tracks.
+• Covers from the files (and, on Android 12 and older, from images in the same folder).
+
+PLAYBACK
+• Plays in the background, with controls in the notification and on the lock screen.
+• Picks up the last queue where you left off.
+• Shuffle, repeat one or all, and swipe the cover to change track.
+• Set where each track starts and ends, or skip the first or last seconds of every track.
+• Skip silence.
+• Sleep timer: 15 to 90 minutes, a custom time or the end of the current track, with a gentle fade-out.
+
+SOUND
+• Equalizer with your device's bands and presets, plus bass boost.
+• Balanced volume between tracks, using ReplayGain tags when present.
+(Audio effects depend on the device; some manufacturers ignore or replace them.)
+
+MORE
+• Playlists: create, rename, reorder and play.
+• Set a song, or just part of it, as your ringtone, notification or alarm sound.
+• Remove a track from the device: moved to the system trash on Android 11 and later.
+• Dark and light themes, in English and Portuguese.
+
+Veyra plays the audio files already on your device. It does not stream, download or sell music.
