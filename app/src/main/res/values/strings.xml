@@ -289,4 +289,28 @@
     <string name="remove_ringtone_warning">This file is set as: %1$s. Once it is removed, the system goes back to its default sound.</string>
     <string name="remove_failed_not_found">This file no longer exists</string>
     <string name="remove_failed_read_only">Couldn\'t delete: the file is somewhere read-only, such as an SD card</string>
+
+    <!-- Phase 15: tag encoding, sleep timer, balanced volume -->
+    <string name="settings_fix_encoding">Fix strange characters</string>
+    <string name="settings_fix_encoding_detail">Show “João” instead of “JoÃ£o” when a tag was saved with the wrong encoding. Files are never changed.</string>
+    <string name="settings_balanced_volume">Balanced volume</string>
+    <string name="settings_balanced_volume_detail">Evens out loudness between tracks. Uses ReplayGain tags when a file has them (it only lowers the volume) and a gentle leveller otherwise. Some devices ignore audio effects.</string>
+    <string name="settings_balanced_mode">ReplayGain</string>
+    <string name="settings_balanced_mode_track">Per track</string>
+    <string name="settings_balanced_mode_album">Per album</string>
+    <string name="sleep_timer">Sleep timer</string>
+    <plurals name="sleep_timer_minutes">
+        <item quantity="one">%d minute</item>
+        <item quantity="other">%d minutes</item>
+    </plurals>
+    <string name="sleep_timer_end_of_track">End of current track</string>
+    <string name="sleep_timer_custom">Custom…</string>
+    <string name="sleep_timer_custom_title">Custom timer</string>
+    <string name="sleep_timer_custom_label">Minutes (1–480)</string>
+    <string name="sleep_timer_start">Start</string>
+    <string name="sleep_timer_extend">15 more minutes</string>
+    <string name="sleep_timer_cancel">Turn off the timer</string>
+    <string name="sleep_timer_remaining">Pauses in %1$s</string>
+    <string name="sleep_timer_until_end">Pauses at the end of this track</string>
+    <string name="sleep_timer_fade_note">The volume fades out over the last 20 seconds.</string>
 </resources>

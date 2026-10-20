@@ -70,6 +70,10 @@ class SettingsViewModel(
         viewModelScope.launch { preferences.setExcludedFolders(DEFAULT_EXCLUDED_FOLDERS) }
     }
 
+    fun setFixEncoding(enabled: Boolean) {
+        viewModelScope.launch { preferences.setFixEncoding(enabled) }
+    }
+
     fun setCleanNames(enabled: Boolean) {
         viewModelScope.launch { preferences.setCleanNames(enabled) }
     }

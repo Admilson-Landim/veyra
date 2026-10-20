@@ -2,12 +2,15 @@ package io.github.admilsonlandim.veyra.playback
 
 import android.content.ComponentName
 import android.content.Context
+import android.os.Bundle
 import androidx.core.content.ContextCompat
+import androidx.core.os.bundleOf
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
+import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionToken
 import io.github.admilsonlandim.veyra.data.clips.TrackClip
 import io.github.admilsonlandim.veyra.data.clips.clipToApply
@@ -63,7 +66,12 @@ class PlayerConnection(context: Context) {
     fun connect() {
         if (controllerFuture != null) return
         val token = SessionToken(appContext, ComponentName(appContext, PlaybackService::class.java))
-        val future = MediaController.Builder(appContext, token).buildAsync()
+        val future = MediaController.Builder(appContext, token)
+            // The sleep timer's state arrives in the session extras.
+            .setListener(object : MediaController.Listener {
+                override fun onExtrasChanged(controller: MediaController, extras: Bundle) = publish()
+            })
+            .buildAsync()
         controllerFuture = future
         future.addListener(
             {
@@ -188,6 +196,19 @@ class PlayerConnection(context: Context) {
         queueIndicesOf(ids, mediaId).forEach(c::removeMediaItem)
     }
 
+    /** Starts the sleep timer for [minutes], or until the end of the current track when null. */
+    fun startSleepTimer(minutes: Int?) =
+        sendSleepCommand(SleepTimerSession.ACTION_START, minutes?.let { bundleOf(SleepTimerSession.ARG_MINUTES to it) })
+
+    fun extendSleepTimer(minutes: Int) =
+        sendSleepCommand(SleepTimerSession.ACTION_EXTEND, bundleOf(SleepTimerSession.ARG_MINUTES to minutes))
+
+    fun cancelSleepTimer() = sendSleepCommand(SleepTimerSession.ACTION_CANCEL, null)
+
+    private fun sendSleepCommand(action: String, args: Bundle?) {
+        controller?.sendCustomCommand(SessionCommand(action, Bundle.EMPTY), args ?: Bundle.EMPTY)
+    }
+
     fun togglePlayPause() {
         val c = controller ?: return
         if (shouldShowPause(c.playWhenReady, c.playbackState)) {
@@ -239,6 +260,7 @@ class PlayerConnection(context: Context) {
             queueSize = c.mediaItemCount,
             repeatMode = repeatModeFromPlayer(c.repeatMode),
             shuffleEnabled = c.shuffleModeEnabled,
+            sleepTimer = SleepTimerSession.fromExtras(c.sessionExtras),
         )
     }
 }

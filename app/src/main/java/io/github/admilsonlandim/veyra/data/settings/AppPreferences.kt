@@ -13,6 +13,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import io.github.admilsonlandim.veyra.data.audio.BASS_STRENGTH_MAX
 import io.github.admilsonlandim.veyra.data.audio.CUSTOM_PRESET
 import io.github.admilsonlandim.veyra.data.audio.EqualizerSettings
+import io.github.admilsonlandim.veyra.data.audio.ReplayGainMode
 import io.github.admilsonlandim.veyra.data.audio.decodeLevels
 import io.github.admilsonlandim.veyra.data.audio.encodeLevels
 import io.github.admilsonlandim.veyra.data.clips.GlobalClipRule
@@ -38,6 +39,8 @@ data class LibraryPreferences(
     val useDeviceImages: Boolean = true,
     /** Show titles and artists cleaned from the file name when the tags do not help (display only). */
     val cleanNames: Boolean = true,
+    /** Repair tags mis-decoded as Windows-1252 ("JoÃ£o" -> "João"); display only. */
+    val fixEncoding: Boolean = true,
     val view: LibraryView = LibraryView.Tracks,
 )
 
@@ -50,6 +53,9 @@ data class PlaybackPreferences(
     val skipEndEnabled: Boolean = false,
     val skipEndSeconds: Int = DEFAULT_GLOBAL_SKIP_SECONDS,
     val skipSilence: Boolean = false,
+    /** Settings > Sound: even out loudness between tracks (ReplayGain, or a leveller). Off by default. */
+    val balancedVolume: Boolean = false,
+    val replayGainMode: ReplayGainMode = ReplayGainMode.Track,
 ) {
     val globalRule: GlobalClipRule
         get() = GlobalClipRule(
@@ -100,6 +106,7 @@ class AppPreferences private constructor(private val store: DataStore<Preference
                 minDurationSeconds = prefs[KEY_MIN_DURATION] ?: DEFAULT_MIN_DURATION_SECONDS,
                 useDeviceImages = prefs[KEY_DEVICE_IMAGES] ?: true,
                 cleanNames = prefs[KEY_CLEAN_NAMES] ?: true,
+                fixEncoding = prefs[KEY_FIX_ENCODING] ?: true,
                 view = prefs[KEY_VIEW]?.let { name -> LibraryView.entries.firstOrNull { it.name == name } }
                     ?: LibraryView.Tracks,
             )
@@ -124,6 +131,9 @@ class AppPreferences private constructor(private val store: DataStore<Preference
                 skipEndEnabled = prefs[KEY_SKIP_END_ON] ?: false,
                 skipEndSeconds = prefs[KEY_SKIP_END_S] ?: DEFAULT_GLOBAL_SKIP_SECONDS,
                 skipSilence = prefs[KEY_SKIP_SILENCE] ?: false,
+                balancedVolume = prefs[KEY_BALANCED_VOLUME] ?: false,
+                replayGainMode = prefs[KEY_REPLAY_GAIN_MODE]?.let { name -> ReplayGainMode.entries.firstOrNull { it.name == name } }
+                    ?: ReplayGainMode.Track,
             )
         }
         .distinctUntilChanged()
@@ -146,6 +156,8 @@ class AppPreferences private constructor(private val store: DataStore<Preference
         it[KEY_SKIP_END_ON] = playback.skipEndEnabled
         it[KEY_SKIP_END_S] = playback.skipEndSeconds
         it[KEY_SKIP_SILENCE] = playback.skipSilence
+        it[KEY_BALANCED_VOLUME] = playback.balancedVolume
+        it[KEY_REPLAY_GAIN_MODE] = playback.replayGainMode.name
     }
 
     suspend fun setEqualizer(settings: EqualizerSettings) = store.edit {
@@ -184,6 +196,8 @@ class AppPreferences private constructor(private val store: DataStore<Preference
 
     suspend fun setCleanNames(enabled: Boolean) = store.edit { it[KEY_CLEAN_NAMES] = enabled }
 
+    suspend fun setFixEncoding(enabled: Boolean) = store.edit { it[KEY_FIX_ENCODING] = enabled }
+
     suspend fun setLibraryView(view: LibraryView) = store.edit { it[KEY_VIEW] = view.name }
 
     suspend fun setPlaybackModes(modes: PlaybackModes) = store.edit {
@@ -202,6 +216,7 @@ class AppPreferences private constructor(private val store: DataStore<Preference
         private val KEY_DEVICE_IMAGES = booleanPreferencesKey("artwork_device_images")
         private val KEY_CLEAN_NAMES = booleanPreferencesKey("library_clean_names")
         private val KEY_VIEW = stringPreferencesKey("library_view")
+        private val KEY_FIX_ENCODING = booleanPreferencesKey("library_fix_encoding")
         private val KEY_SHUFFLE = booleanPreferencesKey("playback_shuffle")
         private val KEY_REPEAT = stringPreferencesKey("playback_repeat")
         private val KEY_SKIP_START_ON = booleanPreferencesKey("global_skip_start_on")
@@ -209,6 +224,8 @@ class AppPreferences private constructor(private val store: DataStore<Preference
         private val KEY_SKIP_END_ON = booleanPreferencesKey("global_skip_end_on")
         private val KEY_SKIP_END_S = intPreferencesKey("global_skip_end_s")
         private val KEY_SKIP_SILENCE = booleanPreferencesKey("skip_silence")
+        private val KEY_BALANCED_VOLUME = booleanPreferencesKey("balanced_volume")
+        private val KEY_REPLAY_GAIN_MODE = stringPreferencesKey("replay_gain_mode")
         private val KEY_EQ_ON = booleanPreferencesKey("eq_enabled")
         private val KEY_EQ_PRESET = intPreferencesKey("eq_preset")
         private val KEY_EQ_LEVELS = stringPreferencesKey("eq_band_levels_mb")

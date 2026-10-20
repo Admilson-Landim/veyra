@@ -21,7 +21,13 @@ import com.google.common.util.concurrent.ListenableFuture
  * notification; their icons follow the current modes.
  */
 @OptIn(UnstableApi::class)
-internal class ModeButtons(private val context: Context) : MediaSession.Callback {
+internal class ModeButtons(
+    private val context: Context,
+    /** Further commands for trusted controllers (this app), handled by [onOtherCommand]. */
+    private val otherCommands: List<SessionCommand> = emptyList(),
+    /** Returns false for an action it does not know. */
+    private val onOtherCommand: (action: String, args: Bundle) -> Boolean = { _, _ -> false },
+) : MediaSession.Callback {
 
     private val toggleShuffle = SessionCommand(ACTION_TOGGLE_SHUFFLE, Bundle.EMPTY)
     private val cycleRepeat = SessionCommand(ACTION_CYCLE_REPEAT, Bundle.EMPTY)
@@ -71,6 +77,7 @@ internal class ModeButtons(private val context: Context) : MediaSession.Callback
                 MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
                     .add(toggleShuffle)
                     .add(cycleRepeat)
+                    .apply { otherCommands.forEach(::add) }
                     .build(),
             )
         }
@@ -88,7 +95,9 @@ internal class ModeButtons(private val context: Context) : MediaSession.Callback
             ACTION_TOGGLE_SHUFFLE -> player.shuffleModeEnabled = !player.shuffleModeEnabled
             ACTION_CYCLE_REPEAT ->
                 player.repeatMode = repeatModeFromPlayer(player.repeatMode).next().toPlayerRepeatMode()
-            else -> return super.onCustomCommand(session, controller, customCommand, args)
+            else -> if (!onOtherCommand(customCommand.customAction, args)) {
+                return super.onCustomCommand(session, controller, customCommand, args)
+            }
         }
         return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
     }

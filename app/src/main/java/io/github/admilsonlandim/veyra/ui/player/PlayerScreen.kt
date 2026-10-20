@@ -39,9 +39,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -57,6 +59,7 @@ import io.github.admilsonlandim.veyra.data.media.ArtworkSize
 import io.github.admilsonlandim.veyra.data.media.Track
 import io.github.admilsonlandim.veyra.playback.PlayerState
 import io.github.admilsonlandim.veyra.playback.RepeatMode
+import io.github.admilsonlandim.veyra.playback.SleepTimerState
 import io.github.admilsonlandim.veyra.playback.progressFraction
 import io.github.admilsonlandim.veyra.ui.clips.formatClipTime
 import io.github.admilsonlandim.veyra.ui.library.formatDuration
@@ -113,11 +116,13 @@ fun PlayerScreen(
     onAdjustClip: (() -> Unit)? = null,
     /** Which start/end rule the current track uses, shown as a discreet line under the artist. */
     rule: RuleIndicator? = null,
+    /** Opens the sleep timer sheet. */
+    onSleepTimer: () -> Unit = {},
 ) {
     Surface(color = MaterialTheme.colorScheme.background, modifier = modifier.fillMaxSize()) {
         Box(Modifier.windowInsetsPadding(WindowInsets.safeDrawing)) {
             BoxWithConstraints(Modifier.fillMaxSize()) {
-                val topBar = @Composable { PlayerTopBar(onClose, onAdjustClip, onTrackOptions) }
+                val topBar = @Composable { PlayerTopBar(onClose, onAdjustClip, onTrackOptions, state.sleepTimer, onSleepTimer) }
                 val details = @Composable { PlayerDetails(state, actions, rule) }
                 // Landscape (wide and short): artwork on the left, everything else on the right,
                 // so the controls are visible without scrolling.
@@ -165,9 +170,16 @@ fun PlayerScreen(
 }
 
 @Composable
-private fun PlayerTopBar(onClose: () -> Unit, onAdjustClip: (() -> Unit)?, onTrackOptions: (() -> Unit)?) {
+private fun PlayerTopBar(
+    onClose: () -> Unit,
+    onAdjustClip: (() -> Unit)?,
+    onTrackOptions: (() -> Unit)?,
+    sleepTimer: SleepTimerState?,
+    onSleepTimer: () -> Unit,
+) {
     Row(
-        Modifier
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
             .fillMaxWidth()
             .padding(top = 8.dp),
     ) {
@@ -179,6 +191,27 @@ private fun PlayerTopBar(onClose: () -> Unit, onAdjustClip: (() -> Unit)?, onTra
             )
         }
         Spacer(Modifier.weight(1f))
+        // An armed timer shows its time left next to the icon, in the accent colour.
+        val status = sleepTimerStatus(sleepTimer)
+        if (sleepTimer is SleepTimerState.At) {
+            Text(
+                text = formatDuration(rememberSleepRemainingMs(sleepTimer.endsAtMs)),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.clearAndSetSemantics {},
+            )
+        }
+        val timerLabel = stringResource(R.string.sleep_timer)
+        IconButton(
+            onClick = onSleepTimer,
+            modifier = Modifier.semantics { if (status != null) stateDescription = status },
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_timer),
+                contentDescription = timerLabel,
+                tint = if (sleepTimer != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+            )
+        }
         if (onAdjustClip != null) {
             IconButton(onClick = onAdjustClip) {
                 Icon(

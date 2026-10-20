@@ -33,6 +33,8 @@ data class PlayerState(
     val queueSize: Int = 0,
     val repeatMode: RepeatMode = RepeatMode.Off,
     val shuffleEnabled: Boolean = false,
+    /** The service's sleep timer, or null when none is set. */
+    val sleepTimer: SleepTimerState? = null,
 ) {
     val hasMedia: Boolean get() = currentMediaId != null
 }

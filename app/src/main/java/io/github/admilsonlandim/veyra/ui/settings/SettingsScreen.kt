@@ -164,6 +164,15 @@ fun SettingsScreen(viewModel: SettingsViewModel, modifier: Modifier = Modifier) 
                 )
             }
 
+            item(key = "fix-encoding") {
+                SwitchRow(
+                    title = stringResource(R.string.settings_fix_encoding),
+                    detail = stringResource(R.string.settings_fix_encoding_detail),
+                    checked = prefs.fixEncoding,
+                    onCheckedChange = viewModel::setFixEncoding,
+                )
+            }
+
             item(key = "skip-short") {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -227,6 +236,7 @@ fun SettingsScreen(viewModel: SettingsViewModel, modifier: Modifier = Modifier) 
                 onReset = viewModel::resetEqualizer,
                 onOpenSystemPanel = { systemPanel?.let(context::startActivity) },
             )
+            balancedVolumeItems(state.playback, viewModel::updatePlayback)
 
             appearanceSection(state.appearance, viewModel::setAppearance)
             languageSection()

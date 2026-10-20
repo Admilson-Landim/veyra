@@ -12,6 +12,9 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
@@ -38,6 +41,7 @@ import io.github.admilsonlandim.veyra.data.audio.BASS_STRENGTH_MAX
 import io.github.admilsonlandim.veyra.data.audio.CUSTOM_PRESET
 import io.github.admilsonlandim.veyra.data.audio.EqualizerCapabilities
 import io.github.admilsonlandim.veyra.data.audio.EqualizerSettings
+import io.github.admilsonlandim.veyra.data.audio.ReplayGainMode
 import io.github.admilsonlandim.veyra.data.audio.formatBandFrequency
 import io.github.admilsonlandim.veyra.data.clips.MIN_GLOBAL_REMAINING_MS
 import io.github.admilsonlandim.veyra.data.settings.PlaybackPreferences
@@ -133,6 +137,52 @@ fun LazyListScope.soundSection(
             }
         }
         Note(stringResource(R.string.eq_vendor_note))
+    }
+}
+
+/** Settings > Sound, under the equalizer: balanced volume and its ReplayGain mode. */
+fun LazyListScope.balancedVolumeItems(
+    playback: PlaybackPreferences,
+    onChange: ((PlaybackPreferences) -> PlaybackPreferences) -> Unit,
+) {
+    item(key = "balanced-volume") {
+        SwitchRow(
+            title = stringResource(R.string.settings_balanced_volume),
+            detail = stringResource(R.string.settings_balanced_volume_detail),
+            checked = playback.balancedVolume,
+            onCheckedChange = { on -> onChange { it.copy(balancedVolume = on) } },
+        )
+    }
+    if (playback.balancedVolume) {
+        item(key = "replay-gain-mode") {
+            Column(Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
+                Text(
+                    stringResource(R.string.settings_balanced_mode),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    ReplayGainMode.entries.forEachIndexed { index, mode ->
+                        SegmentedButton(
+                            selected = playback.replayGainMode == mode,
+                            onClick = { onChange { it.copy(replayGainMode = mode) } },
+                            shape = SegmentedButtonDefaults.itemShape(index, ReplayGainMode.entries.size),
+                            colors = SegmentedButtonDefaults.colors(
+                                activeContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                activeContentColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        ) {
+                            Text(
+                                stringResource(
+                                    if (mode == ReplayGainMode.Track) R.string.settings_balanced_mode_track else R.string.settings_balanced_mode_album,
+                                ),
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

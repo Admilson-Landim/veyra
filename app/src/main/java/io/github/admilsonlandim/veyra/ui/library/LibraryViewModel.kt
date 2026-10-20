@@ -18,7 +18,7 @@ import io.github.admilsonlandim.veyra.data.media.search
 import io.github.admilsonlandim.veyra.data.media.searchArtists
 import io.github.admilsonlandim.veyra.data.media.searchFolders
 import io.github.admilsonlandim.veyra.data.media.sortedFor
-import io.github.admilsonlandim.veyra.data.media.withCleanNames
+import io.github.admilsonlandim.veyra.data.media.withDisplayNames
 import io.github.admilsonlandim.veyra.data.settings.AppPreferences
 import io.github.admilsonlandim.veyra.data.settings.LibraryPreferences
 import kotlinx.coroutines.CoroutineDispatcher
@@ -68,12 +68,15 @@ class LibraryViewModel(
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LibraryUiState.Loading)
 
-    // Names are cleaned once per library load (or when the setting changes), not on every
-    // sort or filter change. Everything downstream (sort, search, playlists, the player and its
-    // notification) sees the cleaned names.
+    // Names are repaired and cleaned once per library load (or when a setting changes), not on
+    // every sort or filter change. Everything downstream (sort, search, playlists, the player
+    // and its notification) sees the displayed names.
     private fun displayedTracks() =
-        combine(repository.tracks(), preferences.map { it.cleanNames }.distinctUntilChanged()) { all, clean ->
-            if (clean) all.map { it.withCleanNames() } else all
+        combine(
+            repository.tracks(),
+            preferences.map { it.fixEncoding to it.cleanNames }.distinctUntilChanged(),
+        ) { all, (fixEncoding, cleanNames) ->
+            if (fixEncoding || cleanNames) all.map { it.withDisplayNames(fixEncoding, cleanNames) } else all
         }
 
     // Preference changes (sort, excluded folders, minimum length) re-filter without re-querying.

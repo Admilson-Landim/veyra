@@ -76,6 +76,8 @@ import io.github.admilsonlandim.veyra.ui.player.MiniPlayer
 import io.github.admilsonlandim.veyra.ui.player.PlayerActions
 import io.github.admilsonlandim.veyra.ui.player.PlayerScreen
 import io.github.admilsonlandim.veyra.ui.player.PlayerViewModel
+import io.github.admilsonlandim.veyra.ui.player.SleepTimerActions
+import io.github.admilsonlandim.veyra.ui.player.SleepTimerSheet
 import io.github.admilsonlandim.veyra.ui.player.ruleIndicatorFor
 import io.github.admilsonlandim.veyra.ui.playlists.AddToPlaylistSheet
 import io.github.admilsonlandim.veyra.ui.playlists.DeletePlaylistDialog
@@ -116,6 +118,7 @@ fun VeyraApp(
     var optionsTrack by remember { mutableStateOf<Track?>(null) }
     var propertiesTrack by remember { mutableStateOf<Track?>(null) }
     var ringtonePermissionNeeded by rememberSaveable { mutableStateOf(false) }
+    var sleepTimerOpen by rememberSaveable { mutableStateOf(false) }
     var ringtoneRequest by remember { mutableStateOf<Pair<Track, RingtoneTarget>?>(null) }
     var ringtoneInProgress by remember { mutableStateOf(false) }
     val settingsViewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.factory(libraryViewModel.uiState))
@@ -268,6 +271,7 @@ fun VeyraApp(
                 onTrackOptions = currentTrack?.let { track -> { optionsTrack = track } },
                 onAdjustClip = currentTrack?.let { track -> { adjustClipTrack = track } },
                 rule = currentTrack?.let { ruleIndicatorFor(it, clips[it.id], globalRule) },
+                onSleepTimer = { sleepTimerOpen = true },
             )
         }
     }
@@ -304,6 +308,18 @@ fun VeyraApp(
         )
     }
     propertiesTrack?.let { track -> TrackPropertiesSheet(track, onDismiss = { propertiesTrack = null }) }
+
+    if (sleepTimerOpen) {
+        SleepTimerSheet(
+            state = playerState.sleepTimer,
+            actions = SleepTimerActions(
+                onStart = playerViewModel::startSleepTimer,
+                onExtend = playerViewModel::extendSleepTimer,
+                onCancel = playerViewModel::cancelSleepTimer,
+            ),
+            onDismiss = { sleepTimerOpen = false },
+        )
+    }
 
     TrackRemovalHost(
         viewModel = removalViewModel,

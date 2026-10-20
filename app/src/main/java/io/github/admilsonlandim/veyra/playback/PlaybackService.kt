@@ -6,18 +6,22 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.os.Build
+import android.os.Bundle
 import android.os.Handler
 import android.os.LocaleList
 import android.os.Looper
+import android.os.SystemClock
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
+import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSourceBitmapLoader
 import androidx.media3.exoplayer.ExoPlayer
@@ -25,10 +29,13 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import io.github.admilsonlandim.veyra.MainActivity
 import io.github.admilsonlandim.veyra.R
+import io.github.admilsonlandim.veyra.data.audio.ReplayGain
+import io.github.admilsonlandim.veyra.data.audio.replayGainVolume
 import io.github.admilsonlandim.veyra.data.db.VeyraDatabase
 import io.github.admilsonlandim.veyra.data.media.ArtworkLoader
 import io.github.admilsonlandim.veyra.data.media.ArtworkSize
 import io.github.admilsonlandim.veyra.data.settings.AppPreferences
+import io.github.admilsonlandim.veyra.data.settings.PlaybackPreferences
 import com.google.common.util.concurrent.MoreExecutors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -81,7 +88,9 @@ class PlaybackService : MediaSessionService() {
             .build()
         player.addListener(SkipBrokenItems(player))
         player.addListener(IdleStopTimer())
-        val modeButtons = ModeButtons(this)
+        val volume = PlayerVolume(player)
+        playerVolume = volume
+        val modeButtons = ModeButtons(this, SleepTimerSession.commands, ::onSleepCommand)
         val session = MediaSession.Builder(this, player)
             .setSessionActivity(openPlayerIntent())
             .setBitmapLoader(artworkLoader())
@@ -98,6 +107,7 @@ class PlaybackService : MediaSessionService() {
                 session.setMediaButtonPreferences(modeButtons.buttonsFor(player))
         })
         attachSettings(player)
+        attachSleepTimer(player, volume, session)
         queueSaver = QueueSaver(player, VeyraDatabase.get(this).savedQueueDao(), AppPreferences.get(this), serviceScope)
             .also { it.start() }
         // Also covers a service restarted by the system with an empty player.
@@ -106,6 +116,9 @@ class PlaybackService : MediaSessionService() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val audioEffects by lazy { AudioEffectsController(this) }
+    private val leveler = VolumeLeveler()
+    private var playerVolume: PlayerVolume? = null
+    private var sleepTimer: SleepTimer? = null
     private var queueSaver: QueueSaver? = null
 
     /**
@@ -116,16 +129,104 @@ class PlaybackService : MediaSessionService() {
     @OptIn(UnstableApi::class) // audioSessionId, onAudioSessionIdChanged
     private fun attachSettings(player: ExoPlayer) {
         val preferences = AppPreferences.get(this)
-        if (player.audioSessionId != C.AUDIO_SESSION_ID_UNSET) audioEffects.onSessionId(player.audioSessionId)
+        if (player.audioSessionId != C.AUDIO_SESSION_ID_UNSET) {
+            audioEffects.onSessionId(player.audioSessionId)
+            leveler.onSessionId(player.audioSessionId)
+        }
         player.addListener(object : Player.Listener {
-            override fun onAudioSessionIdChanged(audioSessionId: Int) = audioEffects.onSessionId(audioSessionId)
+            override fun onAudioSessionIdChanged(audioSessionId: Int) {
+                audioEffects.onSessionId(audioSessionId)
+                leveler.onSessionId(audioSessionId)
+            }
         })
+        attachBalancedVolume(player, preferences)
         serviceScope.launch { preferences.equalizer.collect(audioEffects::update) }
         serviceScope.launch {
             preferences.playback.map { it.skipSilence }.distinctUntilChanged().collect {
                 player.skipSilenceEnabled = it
             }
         }
+    }
+
+    /**
+     * Balanced volume: each item's ReplayGain (read from its tags once the tracks are known)
+     * lowers the player volume; items without it get the leveller instead. Both reset on every
+     * item change, so a previous track's gain never applies to the next one.
+     */
+    @OptIn(UnstableApi::class) // Format.metadata
+    private fun attachBalancedVolume(player: ExoPlayer, preferences: AppPreferences) {
+        var settings = PlaybackPreferences()
+        var gain: ReplayGain? = null
+        fun apply() {
+            val factor = if (settings.balancedVolume) replayGainVolume(gain, settings.replayGainMode) else null
+            playerVolume?.setReplayGain(factor ?: 1f)
+            leveler.setEnabled(settings.balancedVolume && factor == null)
+        }
+        player.addListener(object : Player.Listener {
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                gain = null
+                apply()
+            }
+
+            override fun onTracksChanged(tracks: Tracks) {
+                gain = tracks.groups.firstOrNull { it.type == C.TRACK_TYPE_AUDIO && it.isSelected }
+                    ?.getTrackFormat(0)?.metadata?.let(::replayGainOf)
+                apply()
+            }
+        })
+        serviceScope.launch {
+            preferences.playback.distinctUntilChanged { a, b ->
+                a.balancedVolume == b.balancedVolume && a.replayGainMode == b.replayGainMode
+            }.collect {
+                settings = it
+                apply()
+            }
+        }
+    }
+
+    /** The sleep timer runs here; its state reaches the UI through the session extras. */
+    private fun attachSleepTimer(player: ExoPlayer, volume: PlayerVolume, session: MediaSession) {
+        val timer = SleepTimer(
+            player = object : SleepTimerPlayer {
+                override fun pause() = player.pause()
+
+                @OptIn(UnstableApi::class) // pauseAtEndOfMediaItems
+                override fun setPauseAtEndOfItem(enabled: Boolean) {
+                    player.pauseAtEndOfMediaItems = enabled
+                }
+
+                override fun remainingInItemMs(): Long? =
+                    player.duration.takeIf { it != C.TIME_UNSET && player.isPlaying }?.let { it - player.currentPosition }
+
+                override fun setFade(fade: Float) = volume.setFade(fade)
+            },
+            scope = serviceScope,
+            now = SystemClock::elapsedRealtime,
+            onStateChanged = { session.setSessionExtras(SleepTimerSession.toExtras(it)) },
+        )
+        sleepTimer = timer
+        player.addListener(object : Player.Listener {
+            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+                if (!playWhenReady && reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM) {
+                    timer.onPausedAtEndOfItem()
+                }
+            }
+        })
+    }
+
+    private fun onSleepCommand(action: String, args: Bundle): Boolean {
+        val timer = sleepTimer ?: return false
+        when (action) {
+            SleepTimerSession.ACTION_START -> if (args.containsKey(SleepTimerSession.ARG_MINUTES)) {
+                timer.startMinutes(args.getInt(SleepTimerSession.ARG_MINUTES))
+            } else {
+                timer.startEndOfTrack()
+            }
+            SleepTimerSession.ACTION_EXTEND -> timer.extend(args.getInt(SleepTimerSession.ARG_MINUTES))
+            SleepTimerSession.ACTION_CANCEL -> timer.cancel()
+            else -> return false
+        }
+        return true
     }
 
     /**
@@ -163,6 +264,7 @@ class PlaybackService : MediaSessionService() {
         artworkExecutor.shutdownNow()
         serviceScope.cancel()
         audioEffects.release()
+        leveler.release()
         mediaSession?.run {
             player.release()
             release()

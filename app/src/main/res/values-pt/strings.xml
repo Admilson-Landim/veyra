@@ -288,4 +288,29 @@
     <string name="remove_ringtone_warning">Este ficheiro está definido como: %1$s. Depois de removido, o sistema volta ao som por defeito.</string>
     <string name="remove_failed_not_found">Este ficheiro já não existe</string>
     <string name="remove_failed_read_only">Não foi possível apagar: o ficheiro está numa localização só de leitura, como um cartão SD</string>
+
+    <!-- Fase 15: codificação das etiquetas, temporizador, volume equilibrado -->
+    <string name="settings_fix_encoding">Corrigir caracteres estranhos</string>
+    <string name="settings_fix_encoding_detail">Mostrar “João” em vez de “JoÃ£o” quando uma etiqueta foi gravada com a codificação errada. Os ficheiros nunca são alterados.</string>
+    <string name="settings_balanced_volume">Volume equilibrado</string>
+    <string name="settings_balanced_volume_detail">Iguala o volume entre faixas. Usa as etiquetas ReplayGain quando o ficheiro as tem (só baixa o volume) e, nos outros casos, um nivelamento suave. Alguns dispositivos ignoram efeitos de áudio.</string>
+    <string name="settings_balanced_mode">ReplayGain</string>
+    <string name="settings_balanced_mode_track">Por faixa</string>
+    <string name="settings_balanced_mode_album">Por álbum</string>
+    <string name="sleep_timer">Temporizador</string>
+    <plurals name="sleep_timer_minutes">
+        <item quantity="one">%d minuto</item>
+        <item quantity="many">%d de minutos</item>
+        <item quantity="other">%d minutos</item>
+    </plurals>
+    <string name="sleep_timer_end_of_track">No fim da faixa atual</string>
+    <string name="sleep_timer_custom">Personalizado…</string>
+    <string name="sleep_timer_custom_title">Temporizador personalizado</string>
+    <string name="sleep_timer_custom_label">Minutos (1–480)</string>
+    <string name="sleep_timer_start">Iniciar</string>
+    <string name="sleep_timer_extend">Mais 15 minutos</string>
+    <string name="sleep_timer_cancel">Desligar o temporizador</string>
+    <string name="sleep_timer_remaining">Pausa daqui a %1$s</string>
+    <string name="sleep_timer_until_end">Pausa no fim desta faixa</string>
+    <string name="sleep_timer_fade_note">O volume baixa gradualmente nos últimos 20 segundos.</string>
 </resources>

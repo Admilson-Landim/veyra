@@ -173,6 +173,10 @@ class PlayerViewModel(
     /** The track's file was removed: it must not play again from the queue. */
     fun removeFromQueue(track: Track) = connection.removeFromQueue(track.id.toString())
 
+    fun startSleepTimer(minutes: Int?) = connection.startSleepTimer(minutes)
+    fun extendSleepTimer(minutes: Int) = connection.extendSleepTimer(minutes)
+    fun cancelSleepTimer() = connection.cancelSleepTimer()
+
     fun togglePlayPause() = connection.togglePlayPause()
     fun skipToNext() = connection.skipToNext()
     fun skipToPrevious() = connection.skipToPrevious()
