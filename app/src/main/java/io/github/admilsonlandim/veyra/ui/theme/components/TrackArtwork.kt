@@ -1,5 +1,6 @@
 package io.github.admilsonlandim.veyra.ui.theme.components
 
+import android.graphics.Bitmap
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -54,6 +55,46 @@ fun TrackArtwork(
         value = contentUri?.let { loader.cached(it, artworkSize) }
         if (value == null && contentUri != null) value = loader.load(contentUri, artworkSize)
     }
+    ArtworkBox(bitmap, size, artworkSize, modifier)
+}
+
+/**
+ * Cover for a group of tracks (an artist): the first of [contentUris] that has a cover, tried in
+ * order, or the default artwork. Callers pass only the first few tracks, so a group without
+ * covers costs a bounded number of lookups (misses are cached by the loader).
+ */
+@Composable
+fun GroupArtwork(
+    contentUris: List<String>,
+    size: Dp,
+    artworkSize: ArtworkSize,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val loader = remember(context) { ArtworkLoader.get(context) }
+    val generation by loader.generation.collectAsState()
+    val bitmap by produceState(
+        initialValue = contentUris.firstNotNullOfOrNull { loader.cached(it, artworkSize) },
+        contentUris,
+        artworkSize,
+        generation,
+    ) {
+        value = contentUris.firstNotNullOfOrNull { loader.cached(it, artworkSize) }
+        if (value == null) {
+            for (uri in contentUris) {
+                val loaded = loader.load(uri, artworkSize)
+                if (loaded != null) {
+                    value = loaded
+                    break
+                }
+            }
+        }
+    }
+    ArtworkBox(bitmap, size, artworkSize, modifier)
+}
+
+@Composable
+private fun ArtworkBox(bitmap: Bitmap?, size: Dp, artworkSize: ArtworkSize, modifier: Modifier) {
     val shape = if (artworkSize == ArtworkSize.Large) MaterialTheme.shapes.large else MaterialTheme.shapes.small
 
     Box(

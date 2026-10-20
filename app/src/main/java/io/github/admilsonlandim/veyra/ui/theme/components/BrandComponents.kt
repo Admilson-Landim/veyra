@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -137,22 +139,30 @@ fun VeyraEmptyState(
     }
 }
 
-/** A top-level section: a heading followed by the section content filling the remaining space. */
+/**
+ * A top-level section: a heading, with optional [actions] at its end (icon buttons), followed by
+ * the section content filling the remaining space.
+ */
 @Composable
 fun VeyraSection(
     title: String,
     modifier: Modifier = Modifier,
+    actions: (@Composable RowScope.() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(modifier = modifier.fillMaxHeight()) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier
-                .padding(horizontal = 24.dp, vertical = 8.dp)
-                .semantics { heading() },
-        )
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(end = 12.dp)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 24.dp, vertical = 8.dp)
+                    .semantics { heading() },
+            )
+            actions?.invoke(this)
+        }
         content()
     }
 }

@@ -245,4 +245,31 @@
     <string name="settings_section_about">About</string>
     <string name="about_version">Version %1$s</string>
     <string name="about_privacy">No accounts, no ads and no internet connection. Your music, playlists and settings stay on this device only.</string>
+
+    <!-- Phase 13: search, folders, artists, clean names -->
+    <string name="library_search">Search the library</string>
+    <string name="library_search_hint">Titles, artists, albums, folders</string>
+    <string name="library_search_close">Close search</string>
+    <string name="library_search_clear">Clear search</string>
+    <string name="library_search_no_results_title">No results</string>
+    <string name="library_search_no_results_message">Nothing matches “%1$s”.</string>
+    <string name="library_view_label">Browse by</string>
+    <string name="library_view_tracks">Tracks</string>
+    <string name="library_view_folders">Folders</string>
+    <string name="library_view_artists">Artists</string>
+    <plurals name="library_folder_count">
+        <item quantity="one">%d folder</item>
+        <item quantity="other">%d folders</item>
+    </plurals>
+    <plurals name="library_artist_count">
+        <item quantity="one">%d artist</item>
+        <item quantity="other">%d artists</item>
+    </plurals>
+    <string name="library_open_action">Open</string>
+    <string name="library_back">Back</string>
+    <string name="folder_root">Storage root</string>
+    <string name="folder_unknown">Other locations</string>
+    <string name="settings_clean_names">Clean names from the file name</string>
+    <string name="settings_clean_names_detail">When a track has no tags, or its title is just the file name, show a tidy title and artist: “Artist_-_Song_(Official_Video).mp3” becomes “Song” by “Artist”. Files are never changed.</string>
+    <string name="prop_file_name">File name</string>
 </resources>

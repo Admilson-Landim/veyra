@@ -27,7 +27,7 @@ O tema escuro é prioritário. A estrutura do tema tem de permitir um tema claro
 
 ## Plano de fases
 
-1. Fundação · 2. Biblioteca · 3. Reprodução · 4. Segundo plano · 5. Capas · 6. Playlists · 7. Início/fim por faixa · 8. Opções da faixa, biblioteca e gestos · 9. Início/fim global, saltar silêncio e equalizador · 10. Idiomas, tema claro e release.
+1. Fundação · 2. Biblioteca · 3. Reprodução · 4. Segundo plano · 5. Capas · 6. Playlists · 7. Início/fim por faixa · 8. Opções da faixa, biblioteca e gestos · 9. Início/fim global, saltar silêncio e equalizador · 10. Idiomas, tema claro e release · 11. Teste Bluetooth e identificador da app · 12. Retomar a última fila · 13. Nomes limpos, pesquisa e pastas · 14. Remover música · 15. Etiquetas, temporizador e volume · 16. Publicação.
 
 ## Stack
 

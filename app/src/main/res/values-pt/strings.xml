@@ -242,4 +242,33 @@
     <string name="settings_section_about">Sobre</string>
     <string name="about_version">Versão %1$s</string>
     <string name="about_privacy">Sem contas, sem anúncios e sem ligação à internet. A tua música, as playlists e as definições ficam apenas neste dispositivo.</string>
+
+    <!-- Fase 13: pesquisa, pastas, artistas, nomes limpos -->
+    <string name="library_search">Pesquisar na biblioteca</string>
+    <string name="library_search_hint">Títulos, artistas, álbuns, pastas</string>
+    <string name="library_search_close">Fechar pesquisa</string>
+    <string name="library_search_clear">Limpar pesquisa</string>
+    <string name="library_search_no_results_title">Nenhum resultado</string>
+    <string name="library_search_no_results_message">Nada corresponde a “%1$s”.</string>
+    <string name="library_view_label">Ver por</string>
+    <string name="library_view_tracks">Faixas</string>
+    <string name="library_view_folders">Pastas</string>
+    <string name="library_view_artists">Artistas</string>
+    <plurals name="library_folder_count">
+        <item quantity="one">%d pasta</item>
+        <item quantity="many">%d de pastas</item>
+        <item quantity="other">%d pastas</item>
+    </plurals>
+    <plurals name="library_artist_count">
+        <item quantity="one">%d artista</item>
+        <item quantity="many">%d de artistas</item>
+        <item quantity="other">%d artistas</item>
+    </plurals>
+    <string name="library_open_action">Abrir</string>
+    <string name="library_back">Voltar</string>
+    <string name="folder_root">Raiz do armazenamento</string>
+    <string name="folder_unknown">Outras localizações</string>
+    <string name="settings_clean_names">Limpar nomes a partir do ficheiro</string>
+    <string name="settings_clean_names_detail">Quando a faixa não tem etiquetas, ou o título é só o nome do ficheiro, mostrar um título e artista limpos: “Artista_-_Música_(Vídeo_Oficial).mp3” passa a “Música” de “Artista”. Os ficheiros nunca são alterados.</string>
+    <string name="prop_file_name">Nome do ficheiro</string>
 </resources>

@@ -218,6 +218,7 @@ fun VeyraApp(
                                         playerViewModel.play(request.tracks, request.startIndex, request.shuffle)
                                     },
                                     clips = clips,
+                                    handleBack = !showPlayer,
                                     viewModel = libraryViewModel,
                                     modifier = sectionModifier,
                                 )

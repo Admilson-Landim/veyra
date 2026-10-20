@@ -155,6 +155,15 @@ fun SettingsScreen(viewModel: SettingsViewModel, modifier: Modifier = Modifier) 
                 )
             }
 
+            item(key = "clean-names") {
+                SwitchRow(
+                    title = stringResource(R.string.settings_clean_names),
+                    detail = stringResource(R.string.settings_clean_names_detail),
+                    checked = prefs.cleanNames,
+                    onCheckedChange = viewModel::setCleanNames,
+                )
+            }
+
             item(key = "skip-short") {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,

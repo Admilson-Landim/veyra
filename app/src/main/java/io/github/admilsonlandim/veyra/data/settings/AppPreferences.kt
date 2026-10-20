@@ -16,6 +16,7 @@ import io.github.admilsonlandim.veyra.data.audio.EqualizerSettings
 import io.github.admilsonlandim.veyra.data.audio.decodeLevels
 import io.github.admilsonlandim.veyra.data.audio.encodeLevels
 import io.github.admilsonlandim.veyra.data.clips.GlobalClipRule
+import io.github.admilsonlandim.veyra.data.media.LibraryView
 import io.github.admilsonlandim.veyra.data.media.TrackSort
 import io.github.admilsonlandim.veyra.playback.RepeatMode
 import kotlinx.coroutines.flow.Flow
@@ -35,6 +36,9 @@ data class LibraryPreferences(
      * when a file has none embedded. On Android 13+ it also needs the photos permission.
      */
     val useDeviceImages: Boolean = true,
+    /** Show titles and artists cleaned from the file name when the tags do not help (display only). */
+    val cleanNames: Boolean = true,
+    val view: LibraryView = LibraryView.Tracks,
 )
 
 data class PlaybackModes(val shuffle: Boolean = false, val repeat: RepeatMode = RepeatMode.Off)
@@ -95,6 +99,9 @@ class AppPreferences private constructor(private val store: DataStore<Preference
                 skipShortTracks = prefs[KEY_SKIP_SHORT] ?: false,
                 minDurationSeconds = prefs[KEY_MIN_DURATION] ?: DEFAULT_MIN_DURATION_SECONDS,
                 useDeviceImages = prefs[KEY_DEVICE_IMAGES] ?: true,
+                cleanNames = prefs[KEY_CLEAN_NAMES] ?: true,
+                view = prefs[KEY_VIEW]?.let { name -> LibraryView.entries.firstOrNull { it.name == name } }
+                    ?: LibraryView.Tracks,
             )
         }
         .distinctUntilChanged()
@@ -175,6 +182,10 @@ class AppPreferences private constructor(private val store: DataStore<Preference
 
     suspend fun setUseDeviceImages(enabled: Boolean) = store.edit { it[KEY_DEVICE_IMAGES] = enabled }
 
+    suspend fun setCleanNames(enabled: Boolean) = store.edit { it[KEY_CLEAN_NAMES] = enabled }
+
+    suspend fun setLibraryView(view: LibraryView) = store.edit { it[KEY_VIEW] = view.name }
+
     suspend fun setPlaybackModes(modes: PlaybackModes) = store.edit {
         it[KEY_SHUFFLE] = modes.shuffle
         it[KEY_REPEAT] = modes.repeat.name
@@ -189,6 +200,8 @@ class AppPreferences private constructor(private val store: DataStore<Preference
         private val KEY_SKIP_SHORT = booleanPreferencesKey("library_skip_short")
         private val KEY_MIN_DURATION = intPreferencesKey("library_min_duration_s")
         private val KEY_DEVICE_IMAGES = booleanPreferencesKey("artwork_device_images")
+        private val KEY_CLEAN_NAMES = booleanPreferencesKey("library_clean_names")
+        private val KEY_VIEW = stringPreferencesKey("library_view")
         private val KEY_SHUFFLE = booleanPreferencesKey("playback_shuffle")
         private val KEY_REPEAT = stringPreferencesKey("playback_repeat")
         private val KEY_SKIP_START_ON = booleanPreferencesKey("global_skip_start_on")

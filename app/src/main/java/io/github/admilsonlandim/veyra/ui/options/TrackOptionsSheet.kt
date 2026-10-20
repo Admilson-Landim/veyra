@@ -179,6 +179,7 @@ fun TrackPropertiesSheet(track: Track, onDismiss: () -> Unit) {
                     R.string.prop_title to d.title,
                     R.string.prop_artist to d.artist,
                     R.string.prop_album to d.album,
+                    R.string.prop_file_name to d.fileName,
                     R.string.prop_year to formatYear(d.year),
                     R.string.prop_genre to d.genre,
                     R.string.prop_track_number to formatTrackNumber(d.trackNumber),

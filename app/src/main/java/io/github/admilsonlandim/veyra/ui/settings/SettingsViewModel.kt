@@ -70,6 +70,10 @@ class SettingsViewModel(
         viewModelScope.launch { preferences.setExcludedFolders(DEFAULT_EXCLUDED_FOLDERS) }
     }
 
+    fun setCleanNames(enabled: Boolean) {
+        viewModelScope.launch { preferences.setCleanNames(enabled) }
+    }
+
     fun setSkipShortTracks(enabled: Boolean) {
         viewModelScope.launch { preferences.setSkipShortTracks(enabled) }
     }

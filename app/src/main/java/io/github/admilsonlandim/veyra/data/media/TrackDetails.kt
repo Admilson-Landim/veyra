@@ -22,6 +22,8 @@ data class TrackDetails(
     val bitrateBps: Int?,
     val sampleRateHz: Int?,
     val sizeBytes: Long,
+    /** The file's own name, e.g. "Artist_-_Song.mp3": the title shown may be cleaned from it. */
+    val fileName: String?,
     /** Folder and file name, e.g. "Music/Album/song.mp3". */
     val path: String?,
     val dateAddedSeconds: Long,
@@ -61,6 +63,7 @@ class TrackDetailsLoader(context: Context) {
                 bitrateBps = meta(MediaMetadataRetriever.METADATA_KEY_BITRATE)?.toIntOrNull(),
                 sampleRateHz = sampleRate,
                 sizeBytes = track.sizeBytes,
+                fileName = track.displayName,
                 path = listOfNotNull(track.relativePath, track.displayName).joinToString("").ifEmpty { null },
                 dateAddedSeconds = track.dateAddedSeconds,
             )

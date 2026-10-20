@@ -9,27 +9,31 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import io.github.admilsonlandim.veyra.data.media.TrackSort
-import androidx.compose.material3.TextButton
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -39,23 +43,37 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -66,10 +84,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.admilsonlandim.veyra.R
 import io.github.admilsonlandim.veyra.data.clips.ResolvedClip
+import io.github.admilsonlandim.veyra.data.media.ArtistGroup
 import io.github.admilsonlandim.veyra.data.media.ArtworkSize
+import io.github.admilsonlandim.veyra.data.media.FolderGroup
+import io.github.admilsonlandim.veyra.data.media.LibraryView
 import io.github.admilsonlandim.veyra.data.media.Track
+import io.github.admilsonlandim.veyra.data.media.TrackSort
+import io.github.admilsonlandim.veyra.data.media.groupByFolder
 import io.github.admilsonlandim.veyra.ui.clips.ClipBadge
 import io.github.admilsonlandim.veyra.ui.theme.VeyraTheme
+import io.github.admilsonlandim.veyra.ui.theme.components.BrandTile
+import io.github.admilsonlandim.veyra.ui.theme.components.GroupArtwork
 import io.github.admilsonlandim.veyra.ui.theme.components.TrackArtwork
 import io.github.admilsonlandim.veyra.ui.theme.components.VeyraEmptyState
 import io.github.admilsonlandim.veyra.ui.theme.components.VeyraSection
@@ -98,21 +123,43 @@ fun AudioPermissionMonitor(viewModel: LibraryViewModel) {
     }
 }
 
-/** Library section: owns the permission request and wires the ViewModel to [LibraryContent]. */
+/**
+ * Library section: owns the permission request, the search and the open folder or artist, and
+ * wires the ViewModel to [LibraryContent].
+ *
+ * @param handleBack false while something above the Library (the full player) owns the back
+ *   button: its handlers are registered later and would otherwise take precedence.
+ */
 @Composable
 fun LibraryScreen(
     currentMediaId: String?,
     onTrackClick: (tracks: List<Track>, index: Int) -> Unit,
     /** Long-press or "more options" on a row. */
     onTrackOptions: (Track) -> Unit,
-    /** "Play all" / "Shuffle": the queue to start, built by the ViewModel from the visible list. */
+    /** "Play all" / "Shuffle": the queue to start, built from the list on screen. */
     onPlayQueue: (QueueRequest) -> Unit,
     modifier: Modifier = Modifier,
     clips: Map<Long, ResolvedClip> = emptyMap(),
+    handleBack: Boolean = true,
     viewModel: LibraryViewModel = viewModel(factory = LibraryViewModel.Factory),
 ) {
     val context = LocalContext.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val results by viewModel.searchResults.collectAsStateWithLifecycle()
+
+    // The search text lives here, so typing is never delayed; the ViewModel only filters.
+    var searchOpen by rememberSaveable { mutableStateOf(false) }
+    var query by rememberSaveable { mutableStateOf("") }
+    var openGroup by rememberSaveable { mutableStateOf<String?>(null) }
+    LaunchedEffect(searchOpen, query) { viewModel.setSearchQuery(if (searchOpen) query else null) }
+    DisposableEffect(viewModel) { onDispose { viewModel.setSearchQuery(null) } }
+    val closeSearch = {
+        searchOpen = false
+        query = ""
+    }
+    // Back closes the open folder or artist first, then the search, then leaves.
+    BackHandler(enabled = handleBack && openGroup != null) { openGroup = null }
+    BackHandler(enabled = handleBack && openGroup == null && searchOpen, onBack = closeSearch)
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -129,11 +176,23 @@ fun LibraryScreen(
         onOpenSettings = { context.startActivity(appSettingsIntent(context)) },
         onRetry = viewModel::retry,
         currentMediaId = currentMediaId,
-        onTrackClick = onTrackClick,
+        browse = LibraryBrowseState(
+            searchOpen = searchOpen,
+            query = query,
+            results = results,
+            openGroup = openGroup,
+        ),
+        browseActions = LibraryBrowseActions(
+            onOpenSearch = { searchOpen = true },
+            onCloseSearch = closeSearch,
+            onQueryChange = { query = it },
+            onViewChange = viewModel::setView,
+            onOpenGroup = { openGroup = it },
+        ),
         actions = LibraryListActions(
+            onTrackClick = onTrackClick,
             onTrackOptions = onTrackOptions,
-            onPlayAll = { viewModel.playAllRequest()?.let(onPlayQueue) },
-            onShuffle = { viewModel.shuffleRequest()?.let(onPlayQueue) },
+            onPlayQueue = onPlayQueue,
             onSortChange = viewModel::setSort,
         ),
         clips = clips,
@@ -141,13 +200,34 @@ fun LibraryScreen(
     )
 }
 
-/** Actions of the track list besides playing a row. */
+/** Actions of a track list besides the rows' own. */
 private data class LibraryListActions(
+    /** The queue is the list as shown, starting at the tapped track. */
+    val onTrackClick: (tracks: List<Track>, index: Int) -> Unit,
     val onTrackOptions: (Track) -> Unit,
-    val onPlayAll: () -> Unit,
-    val onShuffle: () -> Unit,
+    val onPlayQueue: (QueueRequest) -> Unit,
     val onSortChange: (TrackSort) -> Unit,
 )
+
+/** Search and navigation inside the Library. [openGroup] is a folder or artist id (see [groupKey]). */
+private data class LibraryBrowseState(
+    val searchOpen: Boolean = false,
+    val query: String = "",
+    val results: SearchResults? = null,
+    val openGroup: String? = null,
+)
+
+private data class LibraryBrowseActions(
+    val onOpenSearch: () -> Unit,
+    val onCloseSearch: () -> Unit,
+    val onQueryChange: (String) -> Unit,
+    val onViewChange: (LibraryView) -> Unit,
+    val onOpenGroup: (String?) -> Unit,
+)
+
+private fun groupKey(folder: FolderGroup) = "folder:${folder.id}"
+
+private fun groupKey(artist: ArtistGroup) = "artist:${artist.id}"
 
 @Composable
 private fun LibraryContent(
@@ -156,11 +236,16 @@ private fun LibraryContent(
     onOpenSettings: () -> Unit,
     onRetry: () -> Unit,
     currentMediaId: String?,
-    onTrackClick: (tracks: List<Track>, index: Int) -> Unit,
+    browse: LibraryBrowseState,
+    browseActions: LibraryBrowseActions,
     actions: LibraryListActions,
     clips: Map<Long, ResolvedClip>,
     modifier: Modifier = Modifier,
 ) {
+    if (state is LibraryUiState.Content) {
+        BrowseContent(state, currentMediaId, browse, browseActions, actions, clips, modifier)
+        return
+    }
     VeyraSection(title = stringResource(R.string.library_title), modifier = modifier) {
         when (state) {
             LibraryUiState.Loading -> LoadingIndicator()
@@ -186,7 +271,306 @@ private fun LibraryContent(
                 },
             )
 
-            is LibraryUiState.Content -> TrackList(state.tracks, state.sort, currentMediaId, onTrackClick, actions, clips)
+            is LibraryUiState.Content -> Unit
+        }
+    }
+}
+
+/** The loaded library: the open folder or artist, or the chosen view, searched or not. */
+@Composable
+private fun BrowseContent(
+    state: LibraryUiState.Content,
+    currentMediaId: String?,
+    browse: LibraryBrowseState,
+    browseActions: LibraryBrowseActions,
+    actions: LibraryListActions,
+    clips: Map<Long, ResolvedClip>,
+    modifier: Modifier,
+) {
+    val openKey = browse.openGroup
+    if (openKey != null) {
+        val folder = state.folders.firstOrNull { groupKey(it) == openKey }
+        val artist = if (folder == null) state.artists.firstOrNull { groupKey(it) == openKey } else null
+        if (folder != null || artist != null) {
+            GroupDetail(
+                title = folder?.let { folderTitle(it) } ?: artist?.name ?: stringResource(R.string.track_unknown_artist),
+                subtitle = folder?.shortPath(),
+                tracks = folder?.tracks ?: artist!!.tracks,
+                sort = state.sort,
+                currentMediaId = currentMediaId,
+                onBack = { browseActions.onOpenGroup(null) },
+                actions = actions,
+                clips = clips,
+                modifier = modifier,
+            )
+            return
+        }
+        // The folder or artist is gone (deleted, excluded, renamed): back to the list.
+        LaunchedEffect(openKey) { browseActions.onOpenGroup(null) }
+    }
+
+    val body: @Composable ColumnScope.() -> Unit = {
+        BrowseBody(state, currentMediaId, browse, browseActions, actions, clips)
+    }
+    if (browse.searchOpen) {
+        Column(modifier.fillMaxHeight()) {
+            SearchField(browse.query, browseActions.onQueryChange, browseActions.onCloseSearch)
+            body()
+        }
+    } else {
+        VeyraSection(
+            title = stringResource(R.string.library_title),
+            modifier = modifier,
+            actions = {
+                IconButton(onClick = browseActions.onOpenSearch) {
+                    Icon(painterResource(R.drawable.ic_search), contentDescription = stringResource(R.string.library_search))
+                }
+            },
+            content = body,
+        )
+    }
+}
+
+/** View selector and the chosen view: tracks, folders or artists, filtered by the search. */
+@Composable
+private fun BrowseBody(
+    state: LibraryUiState.Content,
+    currentMediaId: String?,
+    browse: LibraryBrowseState,
+    browseActions: LibraryBrowseActions,
+    actions: LibraryListActions,
+    clips: Map<Long, ResolvedClip>,
+) {
+    ViewSelector(state.view, browseActions.onViewChange)
+
+    // Null while the search is closed, empty, or waiting for a pause in typing.
+    val results = browse.results.takeIf { browse.searchOpen }
+    val empty = when (state.view) {
+        LibraryView.Tracks -> results?.tracks?.isEmpty()
+        LibraryView.Folders -> results?.folders?.isEmpty()
+        LibraryView.Artists -> results?.artists?.isEmpty()
+    } == true
+    when {
+        empty -> VeyraEmptyState(
+            title = stringResource(R.string.library_search_no_results_title),
+            message = stringResource(R.string.library_search_no_results_message, results!!.query),
+            icon = R.drawable.ic_search,
+        )
+        state.view == LibraryView.Tracks ->
+            TrackList(results?.tracks ?: state.tracks, state.sort, currentMediaId, actions, clips)
+        state.view == LibraryView.Folders -> GroupList(
+            count = pluralCount(R.plurals.library_folder_count, (results?.folders ?: state.folders).size),
+            groups = results?.folders ?: state.folders,
+            key = ::groupKey,
+        ) { folder ->
+            GroupRow(
+                title = folderTitle(folder),
+                detail = listOfNotNull(
+                    folder.shortPath(),
+                    pluralCount(R.plurals.library_track_count, folder.tracks.size),
+                ).joinToString(" · "),
+                onClick = { browseActions.onOpenGroup(groupKey(folder)) },
+            ) { BrandTile(size = 48.dp, icon = R.drawable.ic_folder) }
+        }
+        else -> GroupList(
+            count = pluralCount(R.plurals.library_artist_count, (results?.artists ?: state.artists).size),
+            groups = results?.artists ?: state.artists,
+            key = ::groupKey,
+        ) { artist ->
+            GroupRow(
+                title = artist.name ?: stringResource(R.string.track_unknown_artist),
+                detail = pluralCount(R.plurals.library_track_count, artist.tracks.size),
+                onClick = { browseActions.onOpenGroup(groupKey(artist)) },
+            ) {
+                GroupArtwork(
+                    contentUris = artist.tracks.take(ARTIST_COVER_CANDIDATES).map { it.contentUri },
+                    size = 48.dp,
+                    artworkSize = ArtworkSize.Thumbnail,
+                )
+            }
+        }
+    }
+}
+
+// Tracks tried, in order, for an artist's cover: enough to skip a few files without one.
+private const val ARTIST_COVER_CANDIDATES = 4
+
+@Composable
+private fun pluralCount(id: Int, count: Int): String = pluralStringResource(id, count, count)
+
+@Composable
+private fun folderTitle(folder: FolderGroup): String = folder.name ?: stringResource(
+    if (folder.path == null) R.string.folder_unknown else R.string.folder_root,
+)
+
+@Composable
+private fun SearchField(query: String, onQueryChange: (String) -> Unit, onClose: () -> Unit) {
+    val focusRequester = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+    LaunchedEffect(Unit) { focusRequester.requestFocus() }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(start = 8.dp, end = 16.dp, top = 4.dp, bottom = 4.dp),
+    ) {
+        IconButton(onClick = onClose) {
+            Icon(painterResource(R.drawable.ic_arrow_back), contentDescription = stringResource(R.string.library_search_close))
+        }
+        TextField(
+            value = query,
+            onValueChange = onQueryChange,
+            placeholder = { Text(stringResource(R.string.library_search_hint), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+            singleLine = true,
+            trailingIcon = if (query.isNotEmpty()) {
+                {
+                    IconButton(onClick = { onQueryChange("") }) {
+                        Icon(painterResource(R.drawable.ic_close), contentDescription = stringResource(R.string.library_search_clear))
+                    }
+                }
+            } else {
+                null
+            },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { keyboard?.hide() }),
+            shape = MaterialTheme.shapes.extraLarge,
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+            ),
+            modifier = Modifier
+                .weight(1f)
+                .focusRequester(focusRequester),
+        )
+    }
+}
+
+@Composable
+private fun ViewSelector(view: LibraryView, onSelect: (LibraryView) -> Unit) {
+    val label = stringResource(R.string.library_view_label)
+    SingleChoiceSegmentedButtonRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 4.dp)
+            .semantics { contentDescription = label },
+    ) {
+        LibraryView.entries.forEachIndexed { index, option ->
+            SegmentedButton(
+                selected = option == view,
+                onClick = { onSelect(option) },
+                shape = SegmentedButtonDefaults.itemShape(index, LibraryView.entries.size),
+                colors = SegmentedButtonDefaults.colors(
+                    activeContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    activeContentColor = MaterialTheme.colorScheme.primary,
+                ),
+            ) {
+                Text(stringResource(option.labelRes()), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+    }
+}
+
+private fun LibraryView.labelRes(): Int = when (this) {
+    LibraryView.Tracks -> R.string.library_view_tracks
+    LibraryView.Folders -> R.string.library_view_folders
+    LibraryView.Artists -> R.string.library_view_artists
+}
+
+/** The tracks of a folder or artist, with a way back. */
+@Composable
+private fun GroupDetail(
+    title: String,
+    subtitle: String?,
+    tracks: List<Track>,
+    sort: TrackSort,
+    currentMediaId: String?,
+    onBack: () -> Unit,
+    actions: LibraryListActions,
+    clips: Map<Long, ResolvedClip>,
+    modifier: Modifier,
+) {
+    Column(modifier.fillMaxHeight()) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(start = 8.dp, end = 24.dp, bottom = 4.dp),
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(painterResource(R.drawable.ic_arrow_back), contentDescription = stringResource(R.string.library_back))
+            }
+            Spacer(Modifier.width(4.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.semantics { heading() },
+                )
+                if (subtitle != null) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+        TrackList(tracks, sort, currentMediaId, actions, clips)
+    }
+}
+
+/** A list of folders or artists under a count. */
+@Composable
+private fun <T> GroupList(
+    count: String,
+    groups: List<T>,
+    key: (T) -> String,
+    row: @Composable (T) -> Unit,
+) {
+    LazyColumn(contentPadding = PaddingValues(bottom = 16.dp), modifier = Modifier.fillMaxSize()) {
+        item(key = "header") {
+            Text(
+                text = count,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 8.dp),
+            )
+        }
+        items(groups, key = key) { row(it) }
+    }
+}
+
+@Composable
+private fun GroupRow(title: String, detail: String, onClick: () -> Unit, artwork: @Composable () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClickLabel = stringResource(R.string.library_open_action), onClick = onClick)
+            .heightIn(min = 64.dp)
+            .padding(horizontal = 24.dp, vertical = 8.dp)
+            .semantics(mergeDescendants = true) {},
+    ) {
+        artwork()
+        Spacer(Modifier.width(16.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = detail,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
@@ -232,12 +616,16 @@ private fun PermissionRequest(
     )
 }
 
+/**
+ * Tracks with the count, sort and "Play all" / "Shuffle" header. Everything plays [tracks] as
+ * shown: the whole library, a folder, an artist or search results, so "next" is always the row
+ * below.
+ */
 @Composable
 private fun TrackList(
     tracks: List<Track>,
     sort: TrackSort,
     currentMediaId: String?,
-    onTrackClick: (tracks: List<Track>, index: Int) -> Unit,
     actions: LibraryListActions,
     clips: Map<Long, ResolvedClip>,
 ) {
@@ -246,14 +634,13 @@ private fun TrackList(
         modifier = Modifier.fillMaxSize(),
     ) {
         item(key = "header") {
-            ListHeader(trackCount = tracks.size, sort = sort, actions = actions)
+            ListHeader(tracks = tracks, sort = sort, actions = actions)
         }
         itemsIndexed(tracks, key = { _, track -> track.id }) { index, track ->
             TrackRow(
                 track = track,
                 isCurrent = track.id.toString() == currentMediaId,
-                // The queue is the library as currently shown, starting at the tapped track.
-                onClick = { onTrackClick(tracks, index) },
+                onClick = { actions.onTrackClick(tracks, index) },
                 clip = clips[track.id],
                 onOptions = { actions.onTrackOptions(track) },
             )
@@ -326,7 +713,8 @@ private fun TrackRow(
 
 /** Count, sort menu, and "Play all" / "Shuffle" above the list. */
 @Composable
-private fun ListHeader(trackCount: Int, sort: TrackSort, actions: LibraryListActions) {
+private fun ListHeader(tracks: List<Track>, sort: TrackSort, actions: LibraryListActions) {
+    val trackCount = tracks.size
     var sortMenuOpen by rememberSaveable { mutableStateOf(false) }
     Column(Modifier.padding(start = 24.dp, end = 12.dp, bottom = 8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -373,13 +761,13 @@ private fun ListHeader(trackCount: Int, sort: TrackSort, actions: LibraryListAct
                 .fillMaxWidth()
                 .padding(end = 12.dp),
         ) {
-            Button(onClick = actions.onPlayAll, contentPadding = buttonPadding, modifier = Modifier.weight(1f)) {
+            Button(onClick = { playAllRequest(tracks)?.let(actions.onPlayQueue) }, contentPadding = buttonPadding, modifier = Modifier.weight(1f)) {
                 Icon(painterResource(R.drawable.ic_play), contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.library_play_all), maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             OutlinedButton(
-                onClick = actions.onShuffle,
+                onClick = { shuffleRequest(tracks)?.let(actions.onPlayQueue) },
                 contentPadding = buttonPadding,
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
                 modifier = Modifier.weight(1f),
@@ -420,8 +808,9 @@ private fun LibraryPermissionPreview() {
             onOpenSettings = {},
             onRetry = {},
             currentMediaId = "1",
-            onTrackClick = { _, _ -> },
-            actions = LibraryListActions({}, {}, {}, {}),
+            browse = LibraryBrowseState(),
+            browseActions = LibraryBrowseActions({}, {}, {}, {}, {}),
+            actions = LibraryListActions({ _, _ -> }, {}, {}, {}),
             clips = emptyMap(),
         )
     }
@@ -437,13 +826,14 @@ private fun LibraryContentPreview() {
     )
     VeyraTheme {
         LibraryContent(
-            state = LibraryUiState.Content(listOf(sample)),
+            state = LibraryUiState.Content(listOf(sample), folders = listOf(sample).groupByFolder()),
             onRequestPermission = {},
             onOpenSettings = {},
             onRetry = {},
             currentMediaId = "1",
-            onTrackClick = { _, _ -> },
-            actions = LibraryListActions({}, {}, {}, {}),
+            browse = LibraryBrowseState(),
+            browseActions = LibraryBrowseActions({}, {}, {}, {}, {}),
+            actions = LibraryListActions({ _, _ -> }, {}, {}, {}),
             clips = emptyMap(),
         )
     }
