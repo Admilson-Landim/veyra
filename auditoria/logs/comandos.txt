@@ -1,0 +1,9 @@
+01-clean-assembleDebug | ./gradlew clean assembleDebug --console=plain | exit=0 | 83s
+02-testDebugUnitTest | ./gradlew testDebugUnitTest --console=plain | exit=0 | 12s
+03-lintDebug | ./gradlew lintDebug --console=plain | exit=0 | 85s
+04-assembleRelease | ./gradlew assembleRelease --console=plain | exit=0 | 124s
+05-bundleRelease | ./gradlew bundleRelease --console=plain | exit=0 | 3s
+06-deps-releaseRuntime | ./gradlew :app:dependencies --configuration releaseRuntimeClasspath --console=plain | exit=0 | 6s
+07-deps-debugRuntime | ./gradlew :app:dependencies --configuration debugRuntimeClasspath --console=plain | exit=0 | 2s
+08-buildEnvironment | ./gradlew buildEnvironment --console=plain | exit=0 | 1s
+DONE

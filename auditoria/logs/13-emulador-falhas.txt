@@ -1,0 +1,27 @@
+# Tentativas de arranque do emulador veyra_auditoria (API 36 google_apis x86_64), emulator 37.1.11
+Dispositivos adb no fim: CNXNU20927202909	device  
+== emulator.log (últimas linhas)
+INFO         | GPU Vendor=[Google (Google Inc.)]
+INFO         | GPU Renderer=[Android Emulator OpenGL ES Translator (Google SwiftShader)]
+INFO         | GPU Version=[OpenGL ES 3.0 (OpenGL ES 3.0 SwiftShader 4.0.0.1)]
+USER_INFO    | Emulator is performing a full startup. This may take upto two minutes, or more.
+== emulator2.log (últimas linhas)
+USER_INFO    | Emulator is performing a full startup. This may take upto two minutes, or more.
+INFO         | GPU Vendor=[Google (Google Inc.)]
+INFO         | GPU Renderer=[Android Emulator OpenGL ES Translator (Google SwiftShader)]
+INFO         | GPU Version=[OpenGL ES 3.0 (OpenGL ES 3.0 SwiftShader 4.0.0.1)]
+== emulator3.log (últimas linhas)
+INFO         | GPU Vendor=[Google (Google Inc.)]
+INFO         | GPU Renderer=[Android Emulator OpenGL ES Translator (Google SwiftShader)]
+INFO         | GPU Version=[OpenGL ES 3.0 (OpenGL ES 3.0 SwiftShader 4.0.0.1)]
+USER_INFO    | Emulator is performing a full startup. This may take upto two minutes, or more.
+== emulator4.log (últimas linhas)
+INFO         | GPU Vendor=[Google (Google Inc.)]
+INFO         | GPU Renderer=[Android Emulator OpenGL ES Translator (Google SwiftShader)]
+INFO         | GPU Version=[OpenGL ES 3.0 (OpenGL ES 3.0 SwiftShader 4.0.0.1)]
+USER_INFO    | Emulator is performing a full startup. This may take upto two minutes, or more.
+== coredumpctl
+Tue 2026-10-20 12:32:33 -01  13508 1000 1000 SIGSEGV present  /home/landim/Android/Sdk/emulator/qemu/linux-x86_64/qemu-system-x86_64-headless 161.1M
+Tue 2026-10-20 12:33:39 -01  14376 1000 1000 SIGSEGV present  /home/landim/Android/Sdk/emulator/qemu/linux-x86_64/qemu-system-x86_64-headless 162.1M
+Tue 2026-10-20 12:38:27 -01  17859 1000 1000 SIGSEGV present  /home/landim/Android/Sdk/emulator/qemu/linux-x86_64/qemu-system-x86_64-headless 164.5M
+Tue 2026-10-20 12:39:09 -01  18536 1000 1000 SIGSEGV present  /home/landim/Android/Sdk/emulator/qemu/linux-x86_64/qemu-system-x86_64-headless 166.4M

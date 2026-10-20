@@ -1,0 +1,29 @@
+Calculating task graph as configuration cache cannot be reused because file 'gradle/libs.versions.toml' has changed.
+> Task :app:preBuild UP-TO-DATE
+> Task :app:generateReleaseAssets UP-TO-DATE
+> Task :app:checkReleaseSigning FAILED
+> Task :app:extractProguardFiles UP-TO-DATE
+
+[Incubating] Problems report is available at: file:///home/landim/AndroidStudioProjects/veyra/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:checkReleaseSigning' (registered in build file 'app/build.gradle.kts').
+> keystore.properties aponta para a chave de debug do Android, que a Google Play rejeita — ver store/PLAY_CONSOLE.md, secção 1.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.6.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 5s
+2 actionable tasks: 1 executed, 1 up-to-date
+Configuration cache entry stored.

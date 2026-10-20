@@ -1,0 +1,8 @@
+01-clean-assembleDebug | ./gradlew clean assembleDebug --console=plain | exit=0 | 88s
+02-testDebugUnitTest | ./gradlew testDebugUnitTest --console=plain | exit=0 | 11s
+03-lintDebug | ./gradlew lintDebug --console=plain | exit=0 | 77s
+04-compileDebugAndroidTest | ./gradlew assembleDebugAndroidTest --console=plain | exit=0 | 16s
+05-bundleRelease-chave-debug | ./gradlew bundleRelease --console=plain | exit=1 | 6s
+06-assembleRelease-chave-debug | ./gradlew assembleRelease --console=plain | exit=1 | 4s
+07-releaseManifest | ./gradlew processReleaseMainManifest -x checkReleaseSigning --console=plain | exit=0 | 3s
+02b-testDebugUnitTest (sem avisos) | exit=0

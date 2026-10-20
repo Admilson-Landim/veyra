@@ -1,0 +1,23 @@
+== AAB (keytool -printcert -jarfile)
+Owner: CN=landim, OU=none, O=none, L=Praia, ST=Santiago, C=CV
+Issuer: CN=landim, OU=none, O=none, L=Praia, ST=Santiago, C=CV
+Valid from: Tue Oct 20 12:57:28 CVT 2026 until: Sat Mar 07 12:57:28 CVT 2054
+	 SHA256: C8:42:78:96:1C:33:4A:B2:96:83:D6:13:44:0B:2B:3B:47:3F:F5:FB:3C:CD:0B:AE:08:E7:BD:42:CA:73:6B:48
+Signature algorithm name: SHA384withRSA
+Subject Public Key Algorithm: 2048-bit RSA key
+SubjectKeyIdentifier [
+KeyIdentifier [
+== APK (apksigner verify --print-certs)
+Verifies
+Verified using v1 scheme (JAR signing): false
+Verified using v2 scheme (APK Signature Scheme v2): true
+Verified using v3 scheme (APK Signature Scheme v3): false
+Verified using v3.1 scheme (APK Signature Scheme v3.1): false
+Verified using v4 scheme (APK Signature Scheme v4): false
+Verified for SourceStamp: false
+Number of signers: 1
+Signer #1 certificate DN: CN=landim, OU=none, O=none, L=Praia, ST=Santiago, C=CV
+Signer #1 certificate SHA-256 digest: c84278961c334ab29683d613440b2b3b473ff5fb3ccd0bae08e7bd42ca736b48
+Signer #1 key algorithm: RSA
+Signer #1 key size (bits): 2048
+Signer #1 public key SHA-256 digest: cdb48fdea9ea9363b1a4f50b9fcb5555295cbfa6a613f0594c43661a60d35ecf

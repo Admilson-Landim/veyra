@@ -1,0 +1,66 @@
+Reusing configuration cache.
+> Task :app:preBuild UP-TO-DATE
+> Task :app:generateReleaseAssets UP-TO-DATE
+> Task :app:preReleaseBuild UP-TO-DATE
+> Task :app:extractProguardFiles UP-TO-DATE
+> Task :app:extractDeepLinksRelease
+> Task :app:extractReleaseSupportedLocales
+> Task :app:mergeReleaseJniLibFolders
+> Task :app:generateReleaseBuildConfig
+> Task :app:generateReleaseResources
+> Task :app:createReleaseCompatibleScreenManifests
+> Task :app:mapReleaseSourceSetPaths
+> Task :app:mergeReleaseStartupProfile UP-TO-DATE
+> Task :app:validateSigningRelease
+> Task :app:writeReleaseAppMetadata
+> Task :app:writeReleaseSigningConfigVersions
+> Task :app:javaPreCompileRelease
+> Task :app:generateReleaseLocaleConfig
+> Task :app:processReleaseNavigationResources
+> Task :app:compileReleaseNavigationResources
+> Task :app:checkReleaseAarMetadata
+> Task :app:mergeReleaseAssets
+> Task :app:compressReleaseAssets
+> Task :app:mergeReleaseNativeLibs
+> Task :app:checkReleaseDuplicateClasses
+
+> Task :app:stripReleaseDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so, libdatastore_shared_counter.so. Run with --info option to learn more.
+
+> Task :app:packageReleaseResources
+> Task :app:mergeReleaseArtProfile
+> Task :app:extractReleaseNativeSymbolTables
+> Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
+> Task :app:extractReleaseVersionControlInfo
+> Task :app:processReleaseMainManifest
+> Task :app:collectReleaseDependencies
+> Task :app:processReleaseManifest
+> Task :app:parseReleaseLocalResources
+> Task :app:processReleaseManifestForPackage
+> Task :app:generateReleaseRFile
+> Task :app:sdkReleaseDependencyData
+> Task :app:mergeReleaseResources
+> Task :app:processReleaseResources
+> Task :app:kspReleaseKotlin
+> Task :app:compileReleaseKotlin
+> Task :app:processReleaseJavaRes
+> Task :app:compileReleaseJavaWithJavac
+> Task :app:copyRoomSchemas NO-SOURCE
+> Task :app:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :app:generateReleaseLintVitalReportModel
+> Task :app:mergeReleaseJavaResource
+> Task :app:expandReleaseArtProfileWildcards
+> Task :app:lintVitalAnalyzeRelease
+> Task :app:lintVitalReportRelease
+> Task :app:lintVitalRelease
+> Task :app:minifyReleaseWithR8
+> Task :app:convertShrunkResourcesToBinaryRelease
+> Task :app:optimizeReleaseResources
+> Task :app:compileReleaseArtProfile
+> Task :app:packageRelease
+> Task :app:assembleRelease
+> Task :app:createReleaseApkListingFileRedirect
+
+BUILD SUCCESSFUL in 2m 3s
+52 actionable tasks: 49 executed, 3 up-to-date
+Configuration cache entry reused.
