@@ -14,6 +14,12 @@
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
 
+    <!-- Android 10 and older: needed to delete a track's file (Phase 14). Android 11+ asks the
+         user through a MediaStore trash request instead, so it is never requested there. -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29" />
+
     <!-- PlaybackService runs as a media playback foreground service while music plays. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
@@ -33,6 +39,10 @@
         </intent>
     </queries>
 
+    <!-- requestLegacyExternalStorage only has an effect on Android 10 (ignored from 11): there,
+         deleting another app's file through MediaStore with the system's per-file grant removes
+         the library entry but leaves the file on disk (MediaProvider's own access check fails),
+         so the file would come back at the next scan. Legacy storage deletes it, as on Android 9. -->
     <application
         android:name=".VeyraApplication"
         android:allowBackup="true"
@@ -41,6 +51,7 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
+        android:requestLegacyExternalStorage="true"
         android:supportsRtl="true"
         android:theme="@style/Theme.Veyra">
         <activity

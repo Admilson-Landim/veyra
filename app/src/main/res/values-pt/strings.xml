@@ -271,4 +271,18 @@
     <string name="settings_clean_names">Limpar nomes a partir do ficheiro</string>
     <string name="settings_clean_names_detail">Quando a faixa não tem etiquetas, ou o título é só o nome do ficheiro, mostrar um título e artista limpos: “Artista_-_Música_(Vídeo_Oficial).mp3” passa a “Música” de “Artista”. Os ficheiros nunca são alterados.</string>
     <string name="prop_file_name">Nome do ficheiro</string>
+
+    <!-- Fase 14: remover uma faixa do dispositivo -->
+    <string name="options_move_to_trash">Mover para o lixo</string>
+    <string name="options_delete">Apagar do dispositivo</string>
+    <string name="remove_trash_title">Mover para o lixo?</string>
+    <string name="remove_trash_message">“%1$s” (%2$s) sai da biblioteca e vai para o lixo do dispositivo. Podes recuperá-la durante cerca de 30 dias, por exemplo na app Ficheiros; depois é apagada de vez.</string>
+    <string name="remove_trash_confirm">Mover para o lixo</string>
+    <string name="remove_delete_title">Apagar definitivamente?</string>
+    <string name="remove_delete_message">“%1$s” (%2$s) vai ser apagada deste dispositivo. Isto não pode ser desfeito.</string>
+    <string name="remove_delete_confirm">Apagar</string>
+    <string name="remove_done_trash">“%1$s” foi movida para o lixo</string>
+    <string name="remove_done_delete">“%1$s” foi apagada</string>
+    <string name="remove_failed">Não foi possível remover a faixa</string>
+    <string name="remove_permission_denied">Para apagar ficheiros é precisa a permissão de armazenamento</string>
 </resources>

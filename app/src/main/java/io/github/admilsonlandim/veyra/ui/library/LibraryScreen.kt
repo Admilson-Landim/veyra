@@ -64,6 +64,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -144,6 +145,7 @@ fun LibraryScreen(
     viewModel: LibraryViewModel = viewModel(factory = LibraryViewModel.Factory),
 ) {
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val results by viewModel.searchResults.collectAsStateWithLifecycle()
 
@@ -189,9 +191,17 @@ fun LibraryScreen(
             onViewChange = viewModel::setView,
             onOpenGroup = { openGroup = it },
         ),
+        // Leaving the search field closes the keyboard, which would otherwise come back over
+        // the options sheet's messages when its dialogs close.
         actions = LibraryListActions(
-            onTrackClick = onTrackClick,
-            onTrackOptions = onTrackOptions,
+            onTrackClick = { tracks, index ->
+                focusManager.clearFocus()
+                onTrackClick(tracks, index)
+            },
+            onTrackOptions = {
+                focusManager.clearFocus()
+                onTrackOptions(it)
+            },
             onPlayQueue = onPlayQueue,
             onSortChange = viewModel::setSort,
         ),

@@ -170,6 +170,9 @@ class PlayerViewModel(
     fun play(tracks: List<Track>, startIndex: Int, shuffle: Boolean? = null) =
         connection.playQueue(tracks, startIndex, shuffle) { track -> effectiveFor(track).clip }
 
+    /** The track's file was removed: it must not play again from the queue. */
+    fun removeFromQueue(track: Track) = connection.removeFromQueue(track.id.toString())
+
     fun togglePlayPause() = connection.togglePlayPause()
     fun skipToNext() = connection.skipToNext()
     fun skipToPrevious() = connection.skipToPrevious()

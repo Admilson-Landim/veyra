@@ -178,6 +178,16 @@ class PlayerConnection(context: Context) {
         }
     }
 
+    /**
+     * Drops every queue item for [mediaId] (a removed file). When it is the current item, the
+     * player moves on to the next one, keeping its play/pause state.
+     */
+    fun removeFromQueue(mediaId: String) {
+        val c = controller ?: return
+        val ids = (0 until c.mediaItemCount).map { c.getMediaItemAt(it).mediaId }
+        queueIndicesOf(ids, mediaId).forEach(c::removeMediaItem)
+    }
+
     fun togglePlayPause() {
         val c = controller ?: return
         if (shouldShowPause(c.playWhenReady, c.playbackState)) {
@@ -232,3 +242,7 @@ class PlayerConnection(context: Context) {
         )
     }
 }
+
+/** Positions of [mediaId] in [queue], last first, so removing them in order keeps the rest valid. */
+fun queueIndicesOf(queue: List<String>, mediaId: String): List<Int> =
+    queue.indices.filter { queue[it] == mediaId }.reversed()

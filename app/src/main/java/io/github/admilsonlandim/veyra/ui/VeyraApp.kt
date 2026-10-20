@@ -70,6 +70,7 @@ import io.github.admilsonlandim.veyra.ui.options.RingtoneTarget
 import io.github.admilsonlandim.veyra.ui.options.TrackOptionsActions
 import io.github.admilsonlandim.veyra.ui.options.TrackOptionsSheet
 import io.github.admilsonlandim.veyra.ui.options.TrackPropertiesSheet
+import io.github.admilsonlandim.veyra.ui.options.TrackRemovalHost
 import io.github.admilsonlandim.veyra.ui.player.MiniPlayer
 import io.github.admilsonlandim.veyra.ui.player.PlayerActions
 import io.github.admilsonlandim.veyra.ui.player.PlayerScreen
@@ -112,6 +113,7 @@ fun VeyraApp(
     var adjustClipTrack by remember { mutableStateOf<Track?>(null) }
     var optionsTrack by remember { mutableStateOf<Track?>(null) }
     var propertiesTrack by remember { mutableStateOf<Track?>(null) }
+    var removeTrack by remember { mutableStateOf<Track?>(null) }
     var ringtonePermissionNeeded by rememberSaveable { mutableStateOf(false) }
     var ringtoneRequest by remember { mutableStateOf<Pair<Track, RingtoneTarget>?>(null) }
     var ringtoneInProgress by remember { mutableStateOf(false) }
@@ -295,11 +297,21 @@ fun VeyraApp(
                 // Whole song or only a part: chosen in the ringtone sheet; the permission is
                 // checked when the user confirms.
                 onSetRingtone = { t, target -> ringtoneRequest = t to target },
+                onRemove = { removeTrack = it },
             ),
             onDismiss = { optionsTrack = null },
         )
     }
     propertiesTrack?.let { track -> TrackPropertiesSheet(track, onDismiss = { propertiesTrack = null }) }
+
+    TrackRemovalHost(
+        request = removeTrack,
+        onDismissRequest = { removeTrack = null },
+        trackForId = { id -> libraryState.allTracksOrNull?.firstOrNull { it.id == id } },
+        // The library drops it by itself (MediaStore change); the queue must too.
+        onRemoved = playerViewModel::removeFromQueue,
+        onMessage = showMessage,
+    )
 
     ringtoneRequest?.let { (track, target) ->
         RingtoneSheet(

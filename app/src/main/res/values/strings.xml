@@ -272,4 +272,18 @@
     <string name="settings_clean_names">Clean names from the file name</string>
     <string name="settings_clean_names_detail">When a track has no tags, or its title is just the file name, show a tidy title and artist: “Artist_-_Song_(Official_Video).mp3” becomes “Song” by “Artist”. Files are never changed.</string>
     <string name="prop_file_name">File name</string>
+
+    <!-- Phase 14: remove a track from the device -->
+    <string name="options_move_to_trash">Move to trash</string>
+    <string name="options_delete">Delete from device</string>
+    <string name="remove_trash_title">Move to trash?</string>
+    <string name="remove_trash_message">“%1$s” (%2$s) leaves the library and goes to the device\'s trash. You can restore it for about 30 days, for example in the Files app; after that it is deleted for good.</string>
+    <string name="remove_trash_confirm">Move to trash</string>
+    <string name="remove_delete_title">Delete for good?</string>
+    <string name="remove_delete_message">“%1$s” (%2$s) will be deleted from this device. This can\'t be undone.</string>
+    <string name="remove_delete_confirm">Delete</string>
+    <string name="remove_done_trash">“%1$s” moved to the trash</string>
+    <string name="remove_done_delete">“%1$s” deleted</string>
+    <string name="remove_failed">Couldn\'t remove the track</string>
+    <string name="remove_permission_denied">Deleting files needs the storage permission</string>
 </resources>

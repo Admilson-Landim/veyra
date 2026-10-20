@@ -1,5 +1,6 @@
 package io.github.admilsonlandim.veyra.ui.options
 
+import android.os.Build
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
@@ -36,6 +37,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.admilsonlandim.veyra.R
 import io.github.admilsonlandim.veyra.data.media.ArtworkSize
+import io.github.admilsonlandim.veyra.data.media.RemovalMode
+import io.github.admilsonlandim.veyra.data.media.removalModeFor
 import io.github.admilsonlandim.veyra.data.media.Track
 import io.github.admilsonlandim.veyra.data.media.TrackDetails
 import io.github.admilsonlandim.veyra.data.media.TrackDetailsLoader
@@ -48,6 +51,8 @@ data class TrackOptionsActions(
     val onAdjustClip: (Track) -> Unit,
     val onProperties: (Track) -> Unit,
     val onSetRingtone: (Track, RingtoneTarget) -> Unit,
+    /** Trash (Android 11+) or delete the file; confirmed first in [RemoveTrackDialog]. */
+    val onRemove: (Track) -> Unit,
 )
 
 /** Options for one track, opened by long-press or the "more options" button. */
@@ -116,6 +121,13 @@ fun TrackOptionsSheet(
                         }
                     }
                 }
+            }
+            // Last, apart from the everyday options.
+            val removeLabel = stringResource(
+                if (removalModeFor(Build.VERSION.SDK_INT) == RemovalMode.Trash) R.string.options_move_to_trash else R.string.options_delete,
+            )
+            OptionRow(R.drawable.ic_delete, removeLabel) {
+                pick { actions.onRemove(track) }
             }
         }
     }
