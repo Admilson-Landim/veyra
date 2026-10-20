@@ -25,26 +25,59 @@ Com a **Play App Signing** (obrigatória para apps novas), há duas chaves:
   de ti. Se a perderes, pedes à Google uma nova chave de upload (demora dias, e só funciona com
   acesso à conta). Se alguém a roubar, pode enviar versões em teu nome até a revogares.
 
-**O `keystore.properties` atual assina com a chave de debug do Android** (configuração de teste
-da Fase 10). A Play **rejeita** AABs assinados com o certificado de debug. Antes de submeter:
+**Enquanto o `keystore.properties` apontar para a chave de debug do Android** (configuração de
+teste da Fase 10), `bundleRelease` e `assembleRelease` **param logo no início** com uma mensagem
+(Fase 17): a Play rejeita AABs assinados com o certificado de debug. O mesmo acontece se o ficheiro
+faltar, estiver incompleto ou a keystore não existir. As builds de debug nunca precisam dele.
+
+### Criar a chave de upload (Fedora)
+
+O `keytool` vem com o JDK (o do Android Studio, ou `sudo dnf install java-21-openjdk-devel`).
+Confirma com `keytool -help`.
 
 ```bash
-# Cria a chave de upload (pede palavras-passe: usa palavras-passe fortes e diferentes).
-keytool -genkeypair -v -keystore ~/chaves/veyra-upload.jks -alias veyra-upload \
-  -keyalg RSA -keysize 4096 -validity 10000
+# 1. Pasta só tua, fora do projeto.
+mkdir -p ~/chaves && chmod 700 ~/chaves
+
+# 2. Cria a chave de upload. Pede a palavra-passe da keystore e os teus dados (nome, organização,
+#    código de país de 2 letras); usa uma palavra-passe forte e guarda-a num gestor de palavras-passe.
+keytool -genkeypair -v -keystore ~/chaves/veyra-upload.jks -storetype PKCS12 \
+  -alias veyra-upload -keyalg RSA -keysize 4096 -validity 10000
+
+# 3. Protege o ficheiro.
+chmod 600 ~/chaves/veyra-upload.jks
+
+# 4. Confirma: tem de mostrar "Alias name: veyra-upload" e o teu nome no "Owner",
+#    nunca "CN=Android Debug".
+keytool -list -v -keystore ~/chaves/veyra-upload.jks | grep -E "Alias name|Owner"
 ```
 
-E troca o `keystore.properties` (na raiz do projeto, fora do Git):
+Com `-storetype PKCS12`, a palavra-passe da chave é a mesma da keystore.
+
+### `keystore.properties` (na raiz do projeto, fora do Git)
 
 ```properties
 storeFile=/home/landim/chaves/veyra-upload.jks
-storePassword=…
+storePassword=A_TUA_PALAVRA_PASSE
 keyAlias=veyra-upload
-keyPassword=…
+keyPassword=A_TUA_PALAVRA_PASSE
+```
+
+Depois de o guardar: `chmod 600 keystore.properties`.
+
+### Verificar a assinatura
+
+```bash
+./gradlew bundleRelease
+# O AAB é um JAR assinado: o certificado tem de ser o teu, nunca "CN=Android Debug".
+keytool -printcert -jarfile app/build/outputs/bundle/release/app-release.aab | grep -E "Owner|SHA256:"
+# Ou sobre o APK:
+./gradlew assembleRelease
+~/Android/Sdk/build-tools/36.1.0/apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
 ```
 
 Guarda o `.jks` e as palavras-passe **fora do repositório**: num gestor de palavras-passe e numa
-cópia de segurança offline (por exemplo, uma pen cifrada). O `.gitignore` já exclui
+cópia de segurança offline (por exemplo, uma pen cifrada). O `.gitignore` exclui
 `keystore.properties`, `*.jks` e `*.keystore`. O histórico do Git foi verificado: não tem segredos.
 
 Depois da troca, a app instalada a partir da Play deixa de se poder atualizar por cima da build de

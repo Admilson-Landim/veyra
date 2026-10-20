@@ -154,6 +154,7 @@
     <string name="ringtone_set_action">Definir</string>
     <string name="ringtone_creating">A criar o som…</string>
     <string name="ringtone_failed">Não foi possível definir o toque.</string>
+    <string name="ringtone_cancelled">Cancelado: o som não foi alterado.</string>
 
     <string name="properties_title">Propriedades</string>
     <string name="properties_unknown">Desconhecido</string>

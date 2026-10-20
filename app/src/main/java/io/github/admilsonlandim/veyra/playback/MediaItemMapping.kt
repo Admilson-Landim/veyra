@@ -14,7 +14,8 @@ import io.github.admilsonlandim.veyra.data.media.TrackKey
 const val EXTRA_CONTENT_URI = "io.github.admilsonlandim.veyra.CONTENT_URI"
 
 // MediaMetadata extras carrying the track's TrackKey, so the playback service can save the queue
-// in a form that survives a MediaStore re-index (see SavedQueue).
+// in a form that survives a MediaStore re-index (see SavedQueue). The service takes them out as
+// the items enter the session (see TrackKeyRegistry).
 private const val EXTRA_KEY_PATH = "io.github.admilsonlandim.veyra.KEY_PATH"
 private const val EXTRA_KEY_NAME = "io.github.admilsonlandim.veyra.KEY_NAME"
 private const val EXTRA_KEY_SIZE = "io.github.admilsonlandim.veyra.KEY_SIZE"
@@ -32,6 +33,18 @@ fun MediaItem.trackKey(): TrackKey? {
         sizeBytes = extras.getLong(EXTRA_KEY_SIZE),
         durationMs = extras.getLong(EXTRA_KEY_DURATION),
     )
+}
+
+/**
+ * This item without its TrackKey extras (folder, file name, size, duration): what the player
+ * holds, so they never reach other controllers (see TrackKeyRegistry). The content URI stays: the
+ * notification's artwork loader needs it, and it reveals nothing without storage permission.
+ */
+fun MediaItem.withoutTrackKey(): MediaItem {
+    val extras = mediaMetadata.extras ?: return this
+    if (!extras.containsKey(EXTRA_KEY_SIZE)) return this
+    val kept = Bundle().apply { extras.getString(EXTRA_CONTENT_URI)?.let { putString(EXTRA_CONTENT_URI, it) } }
+    return buildUpon().setMediaMetadata(mediaMetadata.buildUpon().setExtras(kept).build()).build()
 }
 
 /**

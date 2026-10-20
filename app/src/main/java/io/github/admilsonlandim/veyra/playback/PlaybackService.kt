@@ -29,11 +29,12 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import io.github.admilsonlandim.veyra.MainActivity
 import io.github.admilsonlandim.veyra.R
+import io.github.admilsonlandim.veyra.VeyraApplication
 import io.github.admilsonlandim.veyra.data.audio.ReplayGain
 import io.github.admilsonlandim.veyra.data.audio.replayGainVolume
-import io.github.admilsonlandim.veyra.data.db.VeyraDatabase
 import io.github.admilsonlandim.veyra.data.media.ArtworkLoader
 import io.github.admilsonlandim.veyra.data.media.ArtworkSize
+import io.github.admilsonlandim.veyra.data.queue.SavedQueueStore
 import io.github.admilsonlandim.veyra.data.settings.AppPreferences
 import io.github.admilsonlandim.veyra.data.settings.PlaybackPreferences
 import com.google.common.util.concurrent.MoreExecutors
@@ -90,7 +91,7 @@ class PlaybackService : MediaSessionService() {
         player.addListener(IdleStopTimer())
         val volume = PlayerVolume(player)
         playerVolume = volume
-        val modeButtons = ModeButtons(this, SleepTimerSession.commands, ::onSleepCommand)
+        val modeButtons = ModeButtons(this, SleepTimerSession.commands, ::onSleepCommand, trackKeys::admit)
         val session = MediaSession.Builder(this, player)
             .setSessionActivity(openPlayerIntent())
             .setBitmapLoader(artworkLoader())
@@ -108,13 +109,17 @@ class PlaybackService : MediaSessionService() {
         })
         attachSettings(player)
         attachSleepTimer(player, volume, session)
-        queueSaver = QueueSaver(player, VeyraDatabase.get(this).savedQueueDao(), AppPreferences.get(this), serviceScope)
+        // The writer runs in the process scope, so the final save in onDestroy completes after the
+        // service is gone without blocking the main thread; it ends by itself after that save.
+        val savedQueue = SavedQueueStore.get(this)
+        queueSaver = QueueSaver(player, trackKeys::keyOf, PendingQueueWrites(VeyraApplication.processScope, savedQueue::save))
             .also { it.start() }
         // Also covers a service restarted by the system with an empty player.
         scheduleIdleStop()
     }
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val trackKeys = TrackKeyRegistry()
     private val audioEffects by lazy { AudioEffectsController(this) }
     private val leveler = VolumeLeveler()
     private var playerVolume: PlayerVolume? = null
@@ -256,6 +261,12 @@ class PlaybackService : MediaSessionService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         return START_NOT_STICKY
+    }
+
+    /** Swiped away from Recents: save where playback is now, whether or not the service stops. */
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        queueSaver?.saveNow()
+        super.onTaskRemoved(rootIntent)
     }
 
     override fun onDestroy() {

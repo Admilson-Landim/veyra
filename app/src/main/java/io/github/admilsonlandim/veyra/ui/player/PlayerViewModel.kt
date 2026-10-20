@@ -14,13 +14,13 @@ import io.github.admilsonlandim.veyra.data.clips.TrackClip
 import io.github.admilsonlandim.veyra.data.clips.clipToApply
 import io.github.admilsonlandim.veyra.data.clips.effectiveClip
 import io.github.admilsonlandim.veyra.data.clips.resolveClips
-import io.github.admilsonlandim.veyra.data.db.SavedQueueDao
 import io.github.admilsonlandim.veyra.data.db.TrackSettingsDao
 import io.github.admilsonlandim.veyra.data.db.TrackSettingsEntity
 import io.github.admilsonlandim.veyra.data.db.VeyraDatabase
 import io.github.admilsonlandim.veyra.data.media.Track
 import io.github.admilsonlandim.veyra.data.media.toTrackKey
 import io.github.admilsonlandim.veyra.data.queue.SavedQueue
+import io.github.admilsonlandim.veyra.data.queue.SavedQueueStore
 import io.github.admilsonlandim.veyra.data.queue.planRestore
 import io.github.admilsonlandim.veyra.data.queue.positionInClip
 import io.github.admilsonlandim.veyra.data.settings.AppPreferences
@@ -56,7 +56,7 @@ import kotlinx.coroutines.withContext
 class PlayerViewModel(
     private val connection: PlayerConnection,
     private val settingsDao: TrackSettingsDao,
-    private val queueDao: SavedQueueDao,
+    private val readSavedQueue: suspend () -> SavedQueue,
     private val library: Flow<LibraryUiState>,
     private val preferences: AppPreferences,
     private val clock: () -> Long = System::currentTimeMillis,
@@ -141,11 +141,7 @@ class PlayerViewModel(
      * Skipped if nothing saved still exists, or if something was queued in the meantime.
      */
     private suspend fun restoreQueue() {
-        val saved = withContext(Dispatchers.IO) {
-            val keys = queueDao.items().map { it.key }
-            val (index, position) = preferences.queuePosition()
-            SavedQueue(keys, index, position)
-        }
+        val saved = withContext(Dispatchers.IO) { readSavedQueue() }
         if (saved.keys.isEmpty()) return
         // Waits through "permission required" too: the queue comes back once access is granted.
         val tracks = library.mapNotNull { it.allTracksOrNull }.first()
@@ -225,7 +221,7 @@ class PlayerViewModel(
                 PlayerViewModel(
                     connection = PlayerConnection(app),
                     settingsDao = VeyraDatabase.get(app).trackSettingsDao(),
-                    queueDao = VeyraDatabase.get(app).savedQueueDao(),
+                    readSavedQueue = SavedQueueStore.get(app)::read,
                     library = library,
                     preferences = AppPreferences.get(app),
                 )

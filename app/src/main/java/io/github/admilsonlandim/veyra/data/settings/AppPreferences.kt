@@ -34,7 +34,8 @@ data class LibraryPreferences(
     val minDurationSeconds: Int = DEFAULT_MIN_DURATION_SECONDS,
     /**
      * Look for covers stored as separate images (same name, folder cover, VidMate thumbnail)
-     * when a file has none embedded. On Android 13+ it also needs the photos permission.
+     * when a file has none embedded. Android 12 and older only: on 13+ that needs the photos
+     * permission, which the app does not request (see ArtworkLoader).
      */
     val useDeviceImages: Boolean = true,
     /** Show titles and artists cleaned from the file name when the tags do not help (display only). */

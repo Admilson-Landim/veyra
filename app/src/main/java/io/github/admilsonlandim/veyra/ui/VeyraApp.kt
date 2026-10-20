@@ -41,6 +41,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -65,9 +66,11 @@ import io.github.admilsonlandim.veyra.ui.library.LibraryUiState
 import io.github.admilsonlandim.veyra.ui.library.LibraryViewModel
 import io.github.admilsonlandim.veyra.ui.library.allTracksOrNull
 import io.github.admilsonlandim.veyra.ui.options.RemovalViewModel
+import io.github.admilsonlandim.veyra.ui.options.RingtoneResult
 import io.github.admilsonlandim.veyra.ui.options.RingtoneSetter
 import io.github.admilsonlandim.veyra.ui.options.RingtoneSheet
 import io.github.admilsonlandim.veyra.ui.options.RingtoneTarget
+import io.github.admilsonlandim.veyra.ui.options.RingtoneViewModel
 import io.github.admilsonlandim.veyra.ui.options.TrackOptionsActions
 import io.github.admilsonlandim.veyra.ui.options.TrackOptionsSheet
 import io.github.admilsonlandim.veyra.ui.options.TrackPropertiesSheet
@@ -95,11 +98,29 @@ import kotlinx.coroutines.launch
 // Width from which a navigation rail replaces the bottom bar (Material "medium" window class).
 private val RailBreakpoint = 600.dp
 
-/** Asks for a playlist name: a new playlist (optionally adding a track), or a rename. */
+/** Asks for a playlist name: a new playlist (optionally adding a track, by id), or a rename. */
 private sealed interface NameRequest {
-    data class Create(val thenAdd: Track?) : NameRequest
+    data class Create(val thenAddId: Long?) : NameRequest
     data class Rename(val playlistId: Long, val currentName: String) : NameRequest
 }
+
+/** Keeps the open name dialog through rotation and process death. */
+private val NameRequestSaver = listSaver<NameRequest?, Any?>(
+    save = { request ->
+        when (request) {
+            is NameRequest.Create -> listOf("create", request.thenAddId)
+            is NameRequest.Rename -> listOf("rename", request.playlistId, request.currentName)
+            null -> emptyList()
+        }
+    },
+    restore = { saved ->
+        when (saved.firstOrNull()) {
+            "create" -> NameRequest.Create(saved[1] as Long?)
+            "rename" -> NameRequest.Rename(saved[1] as Long, saved[2] as String)
+            else -> null
+        }
+    },
+)
 
 @Composable
 fun VeyraApp(
@@ -109,21 +130,25 @@ fun VeyraApp(
     playerViewModel: PlayerViewModel = viewModel(factory = PlayerViewModel.factory(libraryViewModel.uiState)),
     playlistsViewModel: PlaylistsViewModel = viewModel(factory = PlaylistsViewModel.factory(libraryViewModel.uiState)),
     removalViewModel: RemovalViewModel = viewModel(factory = RemovalViewModel.Factory),
+    ringtoneViewModel: RingtoneViewModel = viewModel(factory = RingtoneViewModel.Factory),
 ) {
     var destination by rememberSaveable { mutableStateOf(VeyraDestination.Library) }
     var playerOpen by rememberSaveable { mutableStateOf(false) }
     var openPlaylistId by rememberSaveable { mutableStateOf<Long?>(null) }
-    var addToPlaylistTrack by remember { mutableStateOf<Track?>(null) }
-    var adjustClipTrack by remember { mutableStateOf<Track?>(null) }
-    var optionsTrack by remember { mutableStateOf<Track?>(null) }
-    var propertiesTrack by remember { mutableStateOf<Track?>(null) }
+    // Open sheets and dialogs survive rotation and process death: they keep the track's id and
+    // find the track again in the library (shown once the library is loaded).
+    var addToPlaylistTrackId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var adjustClipTrackId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var optionsTrackId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var propertiesTrackId by rememberSaveable { mutableStateOf<Long?>(null) }
     var ringtonePermissionNeeded by rememberSaveable { mutableStateOf(false) }
     var sleepTimerOpen by rememberSaveable { mutableStateOf(false) }
-    var ringtoneRequest by remember { mutableStateOf<Pair<Track, RingtoneTarget>?>(null) }
-    var ringtoneInProgress by remember { mutableStateOf(false) }
+    var ringtoneTrackId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var ringtoneTarget by rememberSaveable { mutableStateOf<RingtoneTarget?>(null) }
+    val ringtoneInProgress by ringtoneViewModel.inProgress.collectAsStateWithLifecycle()
     val settingsViewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.factory(libraryViewModel.uiState))
     val context = LocalContext.current
-    var nameRequest by remember { mutableStateOf<NameRequest?>(null) }
+    var nameRequest by rememberSaveable(stateSaver = NameRequestSaver) { mutableStateOf(null) }
 
     LaunchedEffect(openPlayerRequests) {
         if (openPlayerRequests > 0) {
@@ -154,9 +179,30 @@ fun VeyraApp(
         }
     }
 
+    val tracksById = remember(libraryState) { libraryState.allTracksOrNull?.associateBy { it.id }.orEmpty() }
+
     // The current track, as known by the library: needed to add it to a playlist from the player.
-    val currentTrack = remember(libraryState, playerState.currentMediaId) {
-        libraryState.allTracksOrNull?.firstOrNull { it.id.toString() == playerState.currentMediaId }
+    val currentTrack = remember(tracksById, playerState.currentMediaId) {
+        playerState.currentMediaId?.toLongOrNull()?.let(tracksById::get)
+    }
+
+    LaunchedEffect(ringtoneViewModel) {
+        ringtoneViewModel.results.collect { result ->
+            snackbarHostState.showSnackbar(
+                when (result) {
+                    is RingtoneResult.Set -> resources.getString(
+                        when (result.target) {
+                            RingtoneTarget.Call -> R.string.ringtone_set_call
+                            RingtoneTarget.Notification -> R.string.ringtone_set_notification
+                            RingtoneTarget.Alarm -> R.string.ringtone_set_alarm
+                        },
+                        result.track.title ?: result.track.displayName.orEmpty(),
+                    )
+                    RingtoneResult.Failed -> resources.getString(R.string.ringtone_failed)
+                    RingtoneResult.Cancelled -> resources.getString(R.string.ringtone_cancelled)
+                },
+            )
+        }
     }
 
     val showPlayer = playerOpen && playerState.hasMedia
@@ -219,7 +265,7 @@ fun VeyraApp(
                                 LibraryScreen(
                                     currentMediaId = playerState.currentMediaId,
                                     onTrackClick = playerViewModel::play,
-                                    onTrackOptions = { optionsTrack = it },
+                                    onTrackOptions = { optionsTrackId = it.id },
                                     onPlayQueue = { request ->
                                         playerViewModel.play(request.tracks, request.startIndex, request.shuffle)
                                     },
@@ -236,9 +282,9 @@ fun VeyraApp(
                                     viewModel = playlistsViewModel,
                                     currentMediaId = playerState.currentMediaId,
                                     onPlay = playerViewModel::play,
-                                    onCreate = { nameRequest = NameRequest.Create(thenAdd = null) },
+                                    onCreate = { nameRequest = NameRequest.Create(thenAddId = null) },
                                     onRename = { id, name -> nameRequest = NameRequest.Rename(id, name) },
-                                    onTrackOptions = { optionsTrack = it },
+                                    onTrackOptions = { optionsTrackId = it.id },
                                     clips = clips,
                                     modifier = sectionModifier,
                                 )
@@ -268,46 +314,51 @@ fun VeyraApp(
                 actions = playerActions,
                 onClose = { playerOpen = false },
                 snackbarHostState = snackbarHostState,
-                onTrackOptions = currentTrack?.let { track -> { optionsTrack = track } },
-                onAdjustClip = currentTrack?.let { track -> { adjustClipTrack = track } },
+                onTrackOptions = currentTrack?.let { track -> { optionsTrackId = track.id } },
+                onAdjustClip = currentTrack?.let { track -> { adjustClipTrackId = track.id } },
                 rule = currentTrack?.let { ruleIndicatorFor(it, clips[it.id], globalRule) },
                 onSleepTimer = { sleepTimerOpen = true },
             )
         }
     }
 
-    addToPlaylistTrack?.let { track ->
+    addToPlaylistTrackId?.let(tracksById::get)?.let { track ->
         AddToPlaylistSheet(
             trackTitle = track.title ?: track.displayName.orEmpty(),
             playlists = playlists,
             onSelect = { playlist ->
-                addToPlaylistTrack = null
+                addToPlaylistTrackId = null
                 playlistsViewModel.addTrack(playlist, track, onAddedToPlaylist)
             },
             onCreateNew = {
-                addToPlaylistTrack = null
-                nameRequest = NameRequest.Create(thenAdd = track)
+                addToPlaylistTrackId = null
+                nameRequest = NameRequest.Create(thenAddId = track.id)
             },
-            onDismiss = { addToPlaylistTrack = null },
+            onDismiss = { addToPlaylistTrackId = null },
         )
     }
 
-    optionsTrack?.let { track ->
+    optionsTrackId?.let(tracksById::get)?.let { track ->
         TrackOptionsSheet(
             track = track,
             actions = TrackOptionsActions(
-                onAddToPlaylist = { addToPlaylistTrack = it },
-                onAdjustClip = { adjustClipTrack = it },
-                onProperties = { propertiesTrack = it },
+                onAddToPlaylist = { addToPlaylistTrackId = it.id },
+                onAdjustClip = { adjustClipTrackId = it.id },
+                onProperties = { propertiesTrackId = it.id },
                 // Whole song or only a part: chosen in the ringtone sheet; the permission is
                 // checked when the user confirms.
-                onSetRingtone = { t, target -> ringtoneRequest = t to target },
+                onSetRingtone = { t, target ->
+                    ringtoneTrackId = t.id
+                    ringtoneTarget = target
+                },
                 onRemove = removalViewModel::request,
             ),
-            onDismiss = { optionsTrack = null },
+            onDismiss = { optionsTrackId = null },
         )
     }
-    propertiesTrack?.let { track -> TrackPropertiesSheet(track, onDismiss = { propertiesTrack = null }) }
+    propertiesTrackId?.let(tracksById::get)?.let { track ->
+        TrackPropertiesSheet(track, onDismiss = { propertiesTrackId = null })
+    }
 
     if (sleepTimerOpen) {
         SleepTimerSheet(
@@ -328,7 +379,14 @@ fun VeyraApp(
         onMessage = showMessage,
     )
 
-    ringtoneRequest?.let { (track, target) ->
+    val ringtoneTrack = ringtoneTrackId?.let(tracksById::get)
+    val target = ringtoneTarget
+    if (ringtoneTrack != null && target != null) {
+        val track: Track = ringtoneTrack
+        val closeRingtoneSheet = {
+            ringtoneTrackId = null
+            ringtoneTarget = null
+        }
         RingtoneSheet(
             track = track,
             target = target,
@@ -343,36 +401,23 @@ fun VeyraApp(
                     ringtonePermissionNeeded = true
                     return@RingtoneSheet
                 }
-                ringtoneRequest = null
-                ringtoneInProgress = true
-                scope.launch {
-                    val ok = try {
-                        RingtoneSetter.set(context, track, target, excerpt)
-                    } finally {
-                        ringtoneInProgress = false
-                    }
-                    val name = track.title ?: track.displayName.orEmpty()
-                    showMessage(
-                        if (!ok) resources.getString(R.string.ringtone_failed) else resources.getString(
-                            when (target) {
-                                RingtoneTarget.Call -> R.string.ringtone_set_call
-                                RingtoneTarget.Notification -> R.string.ringtone_set_notification
-                                RingtoneTarget.Alarm -> R.string.ringtone_set_alarm
-                            },
-                            name,
-                        ),
-                    )
-                }
+                closeRingtoneSheet()
+                // Runs in the ViewModel, so a rotation does not interrupt it (see RingtoneViewModel).
+                ringtoneViewModel.set(track, target, excerpt)
             },
-            onDismiss = { ringtoneRequest = null },
+            onDismiss = closeRingtoneSheet,
         )
     }
 
-    // Creating an excerpt takes a few seconds: block other actions until it is done.
+    // Creating an excerpt takes a few seconds: block other actions until it is done, but let
+    // the user stop it (reported with a message).
     if (ringtoneInProgress) {
         AlertDialog(
             onDismissRequest = {},
             confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = ringtoneViewModel::cancel) { Text(stringResource(R.string.playlist_cancel_action)) }
+            },
             text = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
@@ -405,7 +450,7 @@ fun VeyraApp(
         )
     }
 
-    adjustClipTrack?.let { track ->
+    adjustClipTrackId?.let(tracksById::get)?.let { track ->
         AdjustClipSheet(
             track = track,
             stored = clips[track.id],
@@ -414,21 +459,21 @@ fun VeyraApp(
                 if (playerState.currentMediaId == track.id.toString()) playerViewModel.absolutePositionMs() else null
             },
             onSave = { clip ->
-                adjustClipTrack = null
+                adjustClipTrackId = null
                 playerViewModel.saveClip(track, clip)
                 showMessage(resources.getString(R.string.clip_saved))
             },
             onUseGlobal = {
-                adjustClipTrack = null
+                adjustClipTrackId = null
                 playerViewModel.resetClip(track)
                 showMessage(resources.getString(R.string.clip_reset_done))
             },
             onFull = {
-                adjustClipTrack = null
+                adjustClipTrackId = null
                 playerViewModel.setFullTrack(track)
                 showMessage(resources.getString(R.string.clip_saved))
             },
-            onDismiss = { adjustClipTrack = null },
+            onDismiss = { adjustClipTrackId = null },
         )
     }
 
@@ -439,8 +484,9 @@ fun VeyraApp(
             existingNames = playlistsViewModel.otherNames(null),
             onConfirm = { name ->
                 nameRequest = null
-                playlistsViewModel.create(name, request.thenAdd) { created ->
-                    if (request.thenAdd != null) onAddedToPlaylist(created)
+                val thenAdd = request.thenAddId?.let(tracksById::get)
+                playlistsViewModel.create(name, thenAdd) { created ->
+                    if (thenAdd != null) onAddedToPlaylist(created)
                 }
             },
             onDismiss = { nameRequest = null },

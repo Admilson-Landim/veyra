@@ -3,6 +3,7 @@ package io.github.admilsonlandim.veyra.playback
 import android.content.Context
 import android.os.Bundle
 import androidx.annotation.OptIn
+import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.CommandButton
@@ -14,11 +15,16 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 
 /**
- * Shuffle and repeat buttons for the media notification (and other system controllers).
+ * The session callback: who may do what, and the shuffle and repeat buttons.
  *
- * The default notification only shows previous / play-pause / next. These two buttons are
+ * The default notification only shows previous / play-pause / next. The two mode buttons are
  * custom session commands placed in the overflow slot, so they appear in the expanded
  * notification; their icons follow the current modes.
+ *
+ * Controllers: this app, the media notification and the system (system UI, lock screen,
+ * Bluetooth through the system, apps the user made notification listeners) are trusted and get
+ * everything. Any other installed app can bind to the exported service; it only gets playback
+ * controls and the current track ([UNTRUSTED_PLAYER_COMMANDS]): no queue, no custom commands.
  */
 @OptIn(UnstableApi::class)
 internal class ModeButtons(
@@ -27,6 +33,8 @@ internal class ModeButtons(
     private val otherCommands: List<SessionCommand> = emptyList(),
     /** Returns false for an action it does not know. */
     private val onOtherCommand: (action: String, args: Bundle) -> Boolean = { _, _ -> false },
+    /** Applied to the items controllers add, before the player gets them (see TrackKeyRegistry). */
+    private val admitItems: (List<MediaItem>) -> List<MediaItem> = { it },
 ) : MediaSession.Callback {
 
     private val toggleShuffle = SessionCommand(ACTION_TOGGLE_SHUFFLE, Bundle.EMPTY)
@@ -64,10 +72,11 @@ internal class ModeButtons(
     }
 
     /**
-     * Starts from Media3's defaults for this controller (all commands if trusted, such as this
-     * app and the media notification; read-only otherwise) and adds the two mode commands for
-     * trusted controllers. Note: super.onConnect must not be used as the base: in Media3 1.11 it
-     * returns a "not implemented" result with no commands at all.
+     * Starts from Media3's defaults for this controller (all commands if trusted; read-only
+     * session commands otherwise). Trusted controllers also get the mode and other custom
+     * commands; untrusted ones get [UNTRUSTED_PLAYER_COMMANDS] instead of Media3's read-only
+     * player commands, which include the whole queue. Note: super.onConnect must not be used as
+     * the base: in Media3 1.11 it returns a "not implemented" result with no commands at all.
      */
     override fun onConnect(session: MediaSession, controller: MediaSession.ControllerInfo): MediaSession.ConnectionResult {
         val builder = MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller)
@@ -80,8 +89,25 @@ internal class ModeButtons(
                     .apply { otherCommands.forEach(::add) }
                     .build(),
             )
+        } else {
+            builder.setAvailablePlayerCommands(Player.Commands.Builder().addAll(*UNTRUSTED_PLAYER_COMMANDS).build())
         }
         return builder.build()
+    }
+
+    /**
+     * Items from controllers (only trusted ones may add any) are playable as sent, like Media3's
+     * default, which still refuses items without a URI; they go through [admitItems] first.
+     */
+    override fun onAddMediaItems(
+        mediaSession: MediaSession,
+        controller: MediaSession.ControllerInfo,
+        mediaItems: List<MediaItem>,
+    ): ListenableFuture<List<MediaItem>> {
+        if (mediaItems.any { it.localConfiguration == null }) {
+            return super.onAddMediaItems(mediaSession, controller, mediaItems)
+        }
+        return Futures.immediateFuture(admitItems(mediaItems))
     }
 
     override fun onCustomCommand(
@@ -102,8 +128,24 @@ internal class ModeButtons(
         return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
     }
 
-    private companion object {
-        const val ACTION_TOGGLE_SHUFFLE = "io.github.admilsonlandim.veyra.TOGGLE_SHUFFLE"
-        const val ACTION_CYCLE_REPEAT = "io.github.admilsonlandim.veyra.CYCLE_REPEAT"
+    companion object {
+        /**
+         * What an untrusted app connected to the session may do: play/pause, skip, seek, and
+         * read the current track (title, artist, artwork). Not the queue (COMMAND_GET_TIMELINE),
+         * not changing it, not volume or track selection.
+         */
+        val UNTRUSTED_PLAYER_COMMANDS = intArrayOf(
+            Player.COMMAND_PLAY_PAUSE,
+            Player.COMMAND_SEEK_TO_PREVIOUS,
+            Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM,
+            Player.COMMAND_SEEK_TO_NEXT,
+            Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM,
+            Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM,
+            Player.COMMAND_GET_CURRENT_MEDIA_ITEM,
+            Player.COMMAND_GET_METADATA,
+        )
+
+        private const val ACTION_TOGGLE_SHUFFLE = "io.github.admilsonlandim.veyra.TOGGLE_SHUFFLE"
+        private const val ACTION_CYCLE_REPEAT = "io.github.admilsonlandim.veyra.CYCLE_REPEAT"
     }
 }

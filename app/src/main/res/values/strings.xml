@@ -161,6 +161,7 @@
     <string name="ringtone_set_action">Set</string>
     <string name="ringtone_creating">Creating the sound…</string>
     <string name="ringtone_failed">Couldn\'t set the sound.</string>
+    <string name="ringtone_cancelled">Cancelled: the sound was not changed.</string>
 
     <string name="properties_title">Properties</string>
     <string name="properties_unknown">Unknown</string>

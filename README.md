@@ -130,7 +130,9 @@ root. That file, `*.jks` and `*.keystore` are git-ignored and must never be comm
    keyPassword=…
    ```
 
-Without `keystore.properties`, `assembleRelease` still builds, but the APK is unsigned.
+Release builds (`assembleRelease`, `bundleRelease`) stop before compiling, with an explanation, if
+`keystore.properties` is missing or incomplete, if the keystore file does not exist, or if it is the
+Android debug key (Google Play rejects it). Debug builds never need a keystore.
 
 ## Architecture
 

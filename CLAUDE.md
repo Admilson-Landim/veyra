@@ -27,9 +27,9 @@ O tema escuro é prioritário. A estrutura do tema tem de permitir um tema claro
 
 ## Plano de fases
 
-1. Fundação · 2. Biblioteca · 3. Reprodução · 4. Segundo plano · 5. Capas · 6. Playlists · 7. Início/fim por faixa · 8. Opções da faixa, biblioteca e gestos · 9. Início/fim global, saltar silêncio e equalizador · 10. Idiomas, tema claro e release · 11. Teste Bluetooth e identificador da app · 12. Retomar a última fila · 13. Nomes limpos, pesquisa e pastas · 14. Remover música · 15. Etiquetas, temporizador e volume · 16. Publicação.
+1. Fundação · 2. Biblioteca · 3. Reprodução · 4. Segundo plano · 5. Capas · 6. Playlists · 7. Início/fim por faixa · 8. Opções da faixa, biblioteca e gestos · 9. Início/fim global, saltar silêncio e equalizador · 10. Idiomas, tema claro e release · 11. Teste Bluetooth e identificador da app · 12. Retomar a última fila · 13. Nomes limpos, pesquisa e pastas · 14. Remover música · 15. Etiquetas, temporizador e volume · 16. Publicação · 17. Correções da auditoria.
 
-**Estado (20 de outubro de 2026): todas as fases (1–16) concluídas. Versão 1.0.0 pronta para submissão na Google Play.**
+**Estado (20 de outubro de 2026):** fases 1–17 concluídas (a 17 corrigiu a auditoria, ver `auditoria/RELATORIO.md`). Assinatura verificada: o AAB e o APK de release estão assinados com a chave de upload (`CN=landim`, SHA-256 `C8:42:78:96…6B:48`), não com a de debug. **Versão 1.0.0 pronta para submissão na Google Play.** Recomenda-se fazer antes a checklist manual da Fase 17 (no relatório) num dispositivo de teste.
 
 ## Stack
 

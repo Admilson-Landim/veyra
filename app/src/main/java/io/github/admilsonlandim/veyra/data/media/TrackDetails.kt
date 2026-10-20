@@ -68,7 +68,8 @@ class TrackDetailsLoader(context: Context) {
                 dateAddedSeconds = track.dateAddedSeconds,
             )
         } finally {
-            retriever.release()
+            // Declared to throw IOException since Android 10; never worth a crash.
+            runCatching { retriever.release() }
         }
     }
 

@@ -1,19 +1,28 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
-   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Android 12+ backup (cloud) and device-to-device transfer. Only what the user would want back on
+    a new phone is listed; everything else is left out, including caches (cover thumbnails,
+    temporary ringtone excerpts) and the per-app language, which the system keeps itself.
+
+    - veyra.db: playlists, per-track start/end, and the last queue (it shares the database; on
+      another phone it is only resumed for files found again there, see SavedQueue.planRestore).
+      The -wal/-shm files are included so a backup taken while the database is open is complete.
+    - datastore/settings.preferences_pb: Settings (library, playback, sound, appearance).
+
+    Playlists and clips find their files again on the new phone through TrackKey (folder, file
+    name, size and duration), not the MediaStore id, which differs from one device to another.
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <include domain="database" path="veyra.db" />
+        <include domain="database" path="veyra.db-wal" />
+        <include domain="database" path="veyra.db-shm" />
+        <include domain="file" path="datastore/settings.preferences_pb" />
     </cloud-backup>
-    <!--
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <include domain="database" path="veyra.db" />
+        <include domain="database" path="veyra.db-wal" />
+        <include domain="database" path="veyra.db-shm" />
+        <include domain="file" path="datastore/settings.preferences_pb" />
     </device-transfer>
-    -->
 </data-extraction-rules>

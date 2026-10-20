@@ -67,7 +67,7 @@ interface TrackFileRemover {
  * library (the repository re-queries on the change).
  *
  * - Android 11+: [MediaStore.createTrashRequest]. The system asks the user and moves the file
- *   to its trash; nothing else to do afterwards.
+ *   to its trash; afterwards [onSystemConfirmed] only checks that the file is gone.
  * - Android 10 and older: a direct delete with WRITE_EXTERNAL_STORAGE, under legacy storage on
  *   Android 10 (see the manifest: there, the per-file system grant removes the library entry
  *   but not the file). Should MediaStore still throw [RecoverableSecurityException], the system
@@ -95,8 +95,15 @@ class TrackRemover(context: Context) : TrackFileRemover {
         }
     }
 
-    override suspend fun onSystemConfirmed(track: Track): RemovalStep =
-        if (mode == RemovalMode.Trash) RemovalStep.Removed else withContext(Dispatchers.IO) { delete(track) }
+    // Trash: the system did the work; MediaStore's default queries leave trashed files out, so
+    // the entry still being found means it was not trashed. Nothing is cleaned up in that case.
+    override suspend fun onSystemConfirmed(track: Track): RemovalStep = withContext(Dispatchers.IO) {
+        when {
+            mode == RemovalMode.Delete -> delete(track)
+            exists(track.contentUri.toUri()) -> RemovalStep.Failed(RemovalFailure.Other)
+            else -> RemovalStep.Removed
+        }
+    }
 
     private fun delete(track: Track): RemovalStep = try {
         val uri = track.contentUri.toUri()

@@ -9,7 +9,11 @@ import android.provider.Settings
 import androidx.core.net.toUri
 import io.github.admilsonlandim.veyra.data.clips.TrackClip
 import io.github.admilsonlandim.veyra.data.media.Track
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 
 /** Which system sound a track becomes. */
@@ -44,12 +48,20 @@ object RingtoneSetter {
      * Returns true when the system reports the new sound afterwards.
      */
     suspend fun set(context: Context, track: Track, target: RingtoneTarget, excerpt: TrackClip? = null): Boolean {
-        val uri = if (excerpt != null && RingtoneExporter.isSupported) {
-            RingtoneExporter(context).export(track, excerpt, target) ?: return false
-        } else {
-            track.contentUri.toUri()
+        if (excerpt == null || !RingtoneExporter.isSupported) return apply(context, target, track.contentUri.toUri())
+        val exporter = RingtoneExporter(context)
+        val uri = exporter.export(track, excerpt, target) ?: return false
+        // An excerpt that does not end up as the system sound (cancelled before, or refused by
+        // the system) is of no use: remove it rather than leave it in the sound pickers.
+        val applied = try {
+            currentCoroutineContext().ensureActive()
+            apply(context, target, uri)
+        } catch (e: CancellationException) {
+            exporter.delete(uri)
+            throw e
         }
-        return apply(context, target, uri)
+        if (!applied) exporter.delete(uri)
+        return applied
     }
 
     /**
@@ -70,7 +82,8 @@ object RingtoneSetter {
             uri.pathSegments.firstOrNull()?.startsWith("external") == true &&
             uri.lastPathSegment?.toLongOrNull() == track.id
 
-    private suspend fun apply(context: Context, target: RingtoneTarget, uri: Uri): Boolean = withContext(Dispatchers.IO) {
+    // Not cancellable: once started, the system sound is changed and the result must be reported.
+    private suspend fun apply(context: Context, target: RingtoneTarget, uri: Uri): Boolean = withContext(NonCancellable + Dispatchers.IO) {
         runCatching {
             RingtoneManager.setActualDefaultRingtoneUri(context, target.type, uri)
             RingtoneManager.getActualDefaultRingtoneUri(context, target.type) != null

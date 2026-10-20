@@ -1,10 +1,12 @@
 package io.github.admilsonlandim.veyra.ui.options
 
+import androidx.lifecycle.SavedStateHandle
 import io.github.admilsonlandim.veyra.data.media.RemovalFailure
 import io.github.admilsonlandim.veyra.data.media.RemovalMode
 import io.github.admilsonlandim.veyra.data.media.RemovalStep
 import io.github.admilsonlandim.veyra.data.media.Track
 import io.github.admilsonlandim.veyra.data.media.TrackFileRemover
+import io.github.admilsonlandim.veyra.data.media.toTrackKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -49,8 +51,12 @@ class RemovalViewModelTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun TestScope.viewModel(remover: FakeRemover, ringtones: Set<RingtoneTarget> = emptySet()) =
-        RemovalViewModel(remover, { ringtones }, { t, mode -> cleaned += t to mode }).also { vm ->
+    private fun TestScope.viewModel(
+        remover: FakeRemover,
+        ringtones: Set<RingtoneTarget> = emptySet(),
+        savedState: SavedStateHandle = SavedStateHandle(),
+    ) =
+        RemovalViewModel(remover, { ringtones }, { t, mode -> cleaned += t to mode }, savedState).also { vm ->
             // Unconfined: each event is recorded as soon as it is sent.
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.events.collect { events += it } }
         }
@@ -160,5 +166,45 @@ class RemovalViewModelTest {
         advanceUntilIdle()
         assertEquals(listOf<RemovalEvent>(RemovalEvent.Failed(RemovalFailure.ReadOnly)), events)
         assertTrue(cleaned.isEmpty())
+    }
+
+    @Test
+    fun pendingTrack_survivesTheProcessBeingRecreated_whileTheSystemAsks() = runTest(dispatcher) {
+        val savedState = SavedStateHandle()
+        val before = viewModel(FakeRemover(RemovalMode.Delete, RemovalStep.NeedsWritePermission), savedState = savedState)
+        before.request(track)
+        advanceUntilIdle()
+        before.confirm()
+        advanceUntilIdle()
+        assertEquals(listOf<RemovalEvent>(RemovalEvent.AskWritePermission), events)
+
+        // Android killed the app during the dialog: a new ViewModel gets the saved state back.
+        val remover = FakeRemover(RemovalMode.Delete, RemovalStep.Removed)
+        val after = viewModel(remover, savedState = SavedStateHandle(savedState.keys().associateWith { savedState.get<Any>(it) }))
+        after.onPermissionResult(granted = true)
+        advanceUntilIdle()
+
+        assertEquals(listOf("start"), remover.calls)
+        val (restored, mode) = cleaned.single()
+        assertEquals(RemovalMode.Delete, mode)
+        // Everything removal and clean-up rely on (URI and TrackKey) came back.
+        assertEquals(track.toTrackKey(), restored.toTrackKey())
+        assertEquals(track.contentUri, restored.contentUri)
+        assertEquals(track.title, restored.title)
+    }
+
+    @Test
+    fun systemNotConfirmingTheRemoval_cleansNothingUp() = runTest(dispatcher) {
+        // The remover reports the file still there after the system said OK.
+        val remover = FakeRemover(RemovalMode.Trash, RemovalStep.NeedsWritePermission, RemovalStep.Failed(RemovalFailure.Other))
+        val vm = viewModel(remover)
+        vm.request(track)
+        advanceUntilIdle()
+        vm.confirm()
+        advanceUntilIdle()
+        vm.onSystemResult(confirmed = true)
+        advanceUntilIdle()
+        assertTrue(cleaned.isEmpty())
+        assertEquals(RemovalEvent.Failed(RemovalFailure.Other), events.last())
     }
 }

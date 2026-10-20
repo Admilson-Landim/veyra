@@ -123,7 +123,8 @@ class ArtworkLoader private constructor(context: Context) {
             retriever.setDataSource(appContext, uri)
             retriever.embeddedPicture
         } finally {
-            retriever.release()
+            // Declared to throw IOException since Android 10; never worth a crash.
+            runCatching { retriever.release() }
         } ?: return null
 
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }

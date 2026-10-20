@@ -29,6 +29,13 @@
         android:name="android.permission.WRITE_SETTINGS"
         tools:ignore="ProtectedPermissions" />
 
+    <!-- Added by media3-exoplayer to tell Wi-Fi from mobile data for streaming. The app only plays
+         local files and has no INTERNET permission; without it, Media3 catches the
+         SecurityException and reports an unknown network type, which local playback ignores. -->
+    <uses-permission
+        android:name="android.permission.ACCESS_NETWORK_STATE"
+        tools:node="remove" />
+
     <!-- Android 11+ package visibility: lets the app check whether the device has a system
          sound effects panel before offering to open it (Settings > Sound). -->
     <queries>

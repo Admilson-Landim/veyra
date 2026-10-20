@@ -6,6 +6,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.admilsonlandim.veyra.data.clips.TrackClip
 import io.github.admilsonlandim.veyra.data.db.TrackSettingsEntity
 import io.github.admilsonlandim.veyra.data.db.VeyraDatabase
+import io.github.admilsonlandim.veyra.data.queue.SavedQueueStore
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -36,9 +37,12 @@ class TrackReferenceCleanerTest {
         cleaner = TrackReferenceCleaner(
             playlists = db.playlistDao(),
             settings = db.trackSettingsDao(),
-            queue = db.savedQueueDao(),
-            readQueuePosition = { position },
-            writeQueuePosition = { index, ms -> position = index to ms },
+            updateSavedQueue = SavedQueueStore(
+                readKeys = { db.savedQueueDao().items().map { it.key } },
+                writeKeys = db.savedQueueDao()::replace,
+                readPosition = { position },
+                writePosition = { index, ms -> position = index to ms },
+            )::update,
             now = { 100 },
         )
         val playlists = db.playlistDao()

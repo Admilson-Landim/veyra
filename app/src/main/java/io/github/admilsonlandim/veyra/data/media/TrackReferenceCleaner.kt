@@ -1,7 +1,6 @@
 package io.github.admilsonlandim.veyra.data.media
 
 import io.github.admilsonlandim.veyra.data.db.PlaylistDao
-import io.github.admilsonlandim.veyra.data.db.SavedQueueDao
 import io.github.admilsonlandim.veyra.data.db.TrackSettingsDao
 import io.github.admilsonlandim.veyra.data.queue.SavedQueue
 import kotlinx.coroutines.Dispatchers
@@ -22,20 +21,13 @@ import kotlinx.coroutines.withContext
 class TrackReferenceCleaner(
     private val playlists: PlaylistDao,
     private val settings: TrackSettingsDao,
-    private val queue: SavedQueueDao,
-    private val readQueuePosition: suspend () -> Pair<Int, Long>,
-    private val writeQueuePosition: suspend (Int, Long) -> Unit,
+    /** Atomic read-modify-write of the saved queue (SavedQueueStore.update). */
+    private val updateSavedQueue: suspend ((SavedQueue) -> SavedQueue) -> Unit,
     private val now: () -> Long = System::currentTimeMillis,
 ) {
 
     suspend fun clean(track: Track, mode: RemovalMode) = withContext(Dispatchers.IO) {
-        val (index, position) = readQueuePosition()
-        val saved = SavedQueue(queue.items().map { it.key }, index, position)
-        val updated = saved.without(track)
-        if (updated !== saved) {
-            queue.replace(updated.keys)
-            writeQueuePosition(updated.currentIndex, updated.positionMs)
-        }
+        updateSavedQueue { saved -> saved.without(track) }
         if (mode == RemovalMode.Delete) {
             playlists.removeEntriesWhere(now()) { it.key.refersTo(track) }
             val rows = settings.all().filter { it.toStoredClip().key.refersTo(track) }.map { it.id }
