@@ -25,6 +25,13 @@ import com.google.common.util.concurrent.ListenableFuture
  * Bluetooth through the system, apps the user made notification listeners) are trusted and get
  * everything. Any other installed app can bind to the exported service; it only gets playback
  * controls and the current track ([UNTRUSTED_PLAYER_COMMANDS]): no queue, no custom commands.
+ *
+ * The platform media session (what system UI, Bluetooth and android.media.session controllers
+ * see) mirrors the media notification controller's commands. Its token reaches every connected
+ * app, untrusted ones included, and the platform serves its queue without asking this callback,
+ * so the notification controller gets no queue ([PLATFORM_HIDDEN_COMMANDS]) and the platform
+ * session publishes none. The notification, lock screen and media buttons only use the current
+ * track; what is lost is the queue list some cars show over Bluetooth.
  */
 @OptIn(UnstableApi::class)
 internal class ModeButtons(
@@ -81,6 +88,11 @@ internal class ModeButtons(
     override fun onConnect(session: MediaSession, controller: MediaSession.ControllerInfo): MediaSession.ConnectionResult {
         val builder = MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller)
             .setMediaButtonPreferences(buttonsFor(session.player))
+        if (session.isMediaNotificationController(controller)) {
+            builder.setAvailablePlayerCommands(
+                MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS.buildUpon().removeAll(*PLATFORM_HIDDEN_COMMANDS).build(),
+            )
+        }
         if (controller.isTrusted) {
             builder.setAvailableSessionCommands(
                 MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
@@ -144,6 +156,9 @@ internal class ModeButtons(
             Player.COMMAND_GET_CURRENT_MEDIA_ITEM,
             Player.COMMAND_GET_METADATA,
         )
+
+        /** Taken from the media notification controller, so the platform session never publishes the queue. */
+        val PLATFORM_HIDDEN_COMMANDS = intArrayOf(Player.COMMAND_GET_TIMELINE)
 
         private const val ACTION_TOGGLE_SHUFFLE = "io.github.admilsonlandim.veyra.TOGGLE_SHUFFLE"
         private const val ACTION_CYCLE_REPEAT = "io.github.admilsonlandim.veyra.CYCLE_REPEAT"

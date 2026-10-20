@@ -36,4 +36,19 @@ class UntrustedControllerCommandsTest {
             Player.COMMAND_GET_METADATA,
         ).forEach { assertTrue("command $it", it in commands) }
     }
+
+    @Test
+    fun thePlatformSession_publishesNoQueue_butPlaybackControlsStay() {
+        val hidden = ModeButtons.PLATFORM_HIDDEN_COMMANDS.toSet()
+        assertTrue(Player.COMMAND_GET_TIMELINE in hidden)
+        listOf(
+            Player.COMMAND_PLAY_PAUSE,
+            Player.COMMAND_SEEK_TO_NEXT,
+            Player.COMMAND_SEEK_TO_PREVIOUS,
+            Player.COMMAND_GET_CURRENT_MEDIA_ITEM,
+            Player.COMMAND_GET_METADATA,
+            Player.COMMAND_SET_SHUFFLE_MODE,
+            Player.COMMAND_SET_REPEAT_MODE,
+        ).forEach { assertFalse("command $it", it in hidden) }
+    }
 }
